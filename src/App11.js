@@ -5,7 +5,6 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { SocketContext } from './contexts';
-import { UserContext } from './contexts';
 import NavBar from './components/NavBar';
 
 // Pages
@@ -25,9 +24,9 @@ const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
 
 
 // Root wrapper to decide when to show NavBar
-function AppShell({ installPrompt, handleInstallClick }) { 
+function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
-  const hideNavOn = ['/', '/login', '/register']; 
+  const hideNavOn = ['/', '/login', '/register']; // hide nav on splash/auth
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
   return (
     <>
@@ -51,9 +50,20 @@ function AppShell({ installPrompt, handleInstallClick }) {
 export default function App() {
 
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [role, setRole] = useState(null);
- 
+  // create socket once
   const socket = useMemo(() => io('https://transport-3d8k.onrender.com', { transports: ['websocket'] }), []);
+
+  useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'SW_NEW_BUILD_READY') {
+        console.log('[SW] New version available — reloading');
+        window.location.reload();
+      }
+    });
+  }
+}, []);
+
 
   useEffect(() => {
     return () => socket.disconnect();
@@ -61,16 +71,15 @@ export default function App() {
 
   useEffect(() => {
 
-    
+    // Ask for notification permission and subscribe
     if (Notification.permission !== "granted") {
-      Notification.requestPermission()
-        .then(permission => {
-          if (permission === "granted") {
-            console.log("Notification permission granted");
-          } else {
-            console.log("Notification permission denied");
-          }
-        });
+      Notification.requestPermission().then((perm) => {
+        if (perm === "granted") {
+          subscribeUserToPush();
+        }
+      });
+    } else {
+      subscribeUserToPush();
     }
 
     return () => socket.close();
@@ -78,20 +87,20 @@ export default function App() {
 
     const [showInstallButton, setShowInstallButton] = useState(false);
   
-     useEffect(() => {
-       const handler = (e) => {
-         // Prevent Chrome from automatically showing the prompt
-         e.preventDefault();
-         setDeferredPrompt(e);
-         setShowInstallButton(true); // Show our custom install button
-       };
-  
-       window.addEventListener('beforeinstallprompt', handler);
-  
-       return () => {
-         window.removeEventListener('beforeinstallprompt', handler);
+    useEffect(() => {
+      const handler = (e) => {
+        // Prevent Chrome from automatically showing the prompt
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setShowInstallButton(true); // Show our custom install button
       };
-     }, []);
+  
+      window.addEventListener('beforeinstallprompt', handler);
+  
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handler);
+      };
+    }, []);
 
 
     const handleInstallClick = async () => {
@@ -109,17 +118,54 @@ export default function App() {
     setShowInstallButton(false);
   };
 
+   const subscribeUserToPush = async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        
+        console.log("Subscription created successfully:", subscription);
+        
+        const response = await fetch(BACKEND_SUBSCRIBE_URL, {
+          method: "POST",
+          body: JSON.stringify(subscription), // THIS IS THE CRUCIAL LINE
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        if (response.ok) {
+          console.log("Subscription sent to server successfully.");
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to send subscription to server:", response.status, errorText);
+        }
+      } catch (err) {
+        console.error("Push subscription failed", err);
+      }
+    }
+  };
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  };
+
+
 
 
 
   return (
     <SocketContext.Provider value={socket}>
-      <UserContext.Provider value={{ role, setRole }}>
       <Router>
         <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} />
       </Router>
       <ToastContainer position="top-right" autoClose={3000} />
-      </UserContext.Provider>
     </SocketContext.Provider>
   );
 }

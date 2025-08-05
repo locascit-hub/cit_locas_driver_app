@@ -1,0 +1,39 @@
+.route-screen {
+  font-family: 'Segoe UI', sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f9;
+}
+
+.header {
+  padding: 1rem;
+  background-color: #2871e6;
+  color: #0d0d0d;
+  text-align: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.map-container {
+  flex: 1;
+  border-top: 1px solid #ccc;
+}
+
+.status-bar {
+  padding: 0.5rem 1rem;
+  font-size: 14px;
+  background: #fff9db;
+  border-top: 1px solid #eee;
+  text-align: center;
+  color: #444;
+}
+
+.centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 18px;
+  color: #666;
+}

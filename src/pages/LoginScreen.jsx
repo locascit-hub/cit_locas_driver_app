@@ -7,11 +7,95 @@ export default function LoginScreen() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('student');
+  const [otpPage, setOtpPage] = useState(false);
+  const [otp, setOtp] = useState('');
   const navigate = useNavigate();
+
+  const BACKEND_SUBSCRIBE_URL = `${process.env.REACT_APP_BACKEND_URL}/subscribe`;
+  const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  };
+
+    const subscribeUserToPush = async (userEmail) => {
+    if ('serviceWorker' in navigator) {;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        
+        console.log("Subscription created successfully:", subscription);
+        
+        const response = await fetch(BACKEND_SUBSCRIBE_URL, {
+          method: "POST",
+          body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        if (response.ok) {
+          console.log("Subscription sent to server successfully.");
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to send subscription to server:", response.status, errorText);
+        }
+      } catch (err) {
+        console.error("Failed to subscribe to push notifications:", err);
+      }
+
+    }
+    else {
+      console.error("Service Worker not supported in this browser.");
+    }
+  };
 
   const handleLogin = async () => {
     if (userType === 'student') {
+      if (!email) {
+        alert('Please enter your email');
+        return;
+      }
+      if(!otpPage) {
+      // For student login, we can use the email as the identifier
+      //generate otp in server and send it to email
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        alert(`Login Error: ${data.error || 'Failed to send OTP'}`);
+        return;
+      }
+      alert('OTP sent to your email. Please check your inbox.');
+      setOtpPage(true);
+      // Here you can handle the OTP page navigation or state change
+      return;
+    }
+    else{
+      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), otp: otp.trim() })
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Invalid OTP or email');
+        }
+      });
+
+      await subscribeUserToPush(email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
+    }
     } else if (userType === 'driver') {
         // Driver login logic here, if any
         navigate('/home', { replace: true, state: { role: 'driver', mobile } });
@@ -22,7 +106,7 @@ export default function LoginScreen() {
       }
 
       try {
-        const response = await fetch('https://transport-3d8k.onrender.com/api/incharge/login', {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/incharge/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -110,10 +194,38 @@ export default function LoginScreen() {
               </div>
             </>
           )}
+
+          {/* student email */}
+          {userType === 'student' && (
+            <div style={styles.inputContainer}>
+              <FiMail size={20} color="#64748B" />
+              <input
+                style={styles.input}
+                type="email"
+                placeholder="sample@citchennai.net"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* OTP input for student login */}
+          {otpPage && (
+            <div style={styles.inputContainer}>
+              <FiLock size={20} color="#64748B" />
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Enter OTP" 
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+            </div>
+          )}
           
           <button style={styles.loginButton} onClick={handleLogin}>
             <span style={styles.loginButtonText}>
-              {userType === 'student' ? 'Go' : 'Sign In'}
+               Sign In
             </span>
           </button>
         </div>

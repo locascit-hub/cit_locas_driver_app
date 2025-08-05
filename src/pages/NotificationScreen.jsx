@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { FiBell, FiSend, FiAlertTriangle, FiAlertCircle, FiCheckCircle, FiInfo, FiImage } from 'react-icons/fi';
+import {
+  FiBell,
+  FiSend,
+  FiAlertTriangle,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiInfo,
+  FiImage,
+  FiTrash,
+} from 'react-icons/fi';
+import { useLocation } from 'react-router-dom';
 import { SocketContext } from '../contexts';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
+import { UserContext } from '../contexts';
 
-// Utility functions for icons and border colors
 function getNotificationIcon(type) {
   switch (type) {
     case 'warning':
@@ -31,17 +41,23 @@ function getNotificationBorder(type) {
   }
 }
 
-export default function NotificationScreen({ role = 'student' }) {
+export default function NotificationScreen() {
+ 
+  const { role } = useContext(UserContext);
+
   const socket = useContext(SocketContext);
   const [notifications, setNotifications] = useState([]);
   const [newNotification, setNewNotification] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
-  // New state for the lightbox
+
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
 
-  // Web PWA Host
+  
+
   const HOST = 'https://transport-3d8k.onrender.com';
 
   useEffect(() => {
@@ -49,13 +65,9 @@ export default function NotificationScreen({ role = 'student' }) {
     socket.on('studentNotification', (notif) => {
       if (role === 'student' || role === 'driver') {
         setNotifications(prev => [notif, ...prev]);
-        // Removed toast.info
       }
     });
-
-    return () => {
-      socket.off('studentNotification');
-    };
+    return () => socket.off('studentNotification');
   }, [socket, role]);
 
   const fetchNotifications = async () => {
@@ -68,8 +80,31 @@ export default function NotificationScreen({ role = 'student' }) {
     }
   };
 
+  const handleDelete = async (id) => {
+  const confirmed = window.confirm('Are you sure you want to delete this notification?');
+  if (!confirmed) return;
+
+  try {
+    console.log('Frontend sending delete request for id:', id);
+    const res = await fetch(`${HOST}/api/notifications/${id}`, {
+      method: 'DELETE',
+    });
+    const data = await res.json();
+    if (data.success) {
+      setNotifications(prev => prev.filter(n => n._id !== id));
+      alert('Deleted successfully');
+    } else {
+      throw new Error(data.error || 'Delete failed');
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+};
+
   const handleImageSelect = (e) => {
-    if (e.target.files?.[0]) setSelectedImage(e.target.files[0]);
+    if (e.target.files?.[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
   };
 
   const sendNotification = async () => {
@@ -77,34 +112,34 @@ export default function NotificationScreen({ role = 'student' }) {
       alert('Please enter a message or select an image');
       return;
     }
-
     const formData = new FormData();
     formData.append('title', 'Announcement');
     formData.append('message', newNotification);
     formData.append('sender', 'Transport Incharge');
     formData.append('type', 'info');
-    if (selectedImage) formData.append('image', selectedImage);
+    if (selectedImage) {
+      formData.append('image', selectedImage);
+    }
 
     try {
       const res = await fetch(`${HOST}/api/notifications`, {
         method: 'POST',
         body: formData,
       });
-
       const data = await res.json();
       if (data.success) {
         setNewNotification('');
         setSelectedImage(null);
         fetchNotifications();
-        // Removed toast.success
       }
     } catch (error) {
       alert('Error sending notification');
     }
   };
 
-  return (
+return (
     <div style={styles.container}>
+      {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
           <p style={styles.title}>Notifications</p>
@@ -119,23 +154,43 @@ export default function NotificationScreen({ role = 'student' }) {
         <FiBell size={24} color="#2563EB" />
       </div>
 
+      {/* Send Notification (incharge only) */}
       {role === 'incharge' && (
         <div style={styles.sendSection}>
           <p style={styles.sendTitle}>Send Notification</p>
+
+          {/* Upload Image Button */}
           <label style={styles.uploadButton}>
             <FiImage size={16} color="#2563EB" style={{ marginRight: 6 }} />
             <span style={styles.uploadText}>
               {selectedImage ? 'Change Selected Image' : 'Upload Image'}
             </span>
-            <input type="file" accept="image/*" onChange={handleImageSelect} hidden />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageSelect}
+              hidden
+            />
           </label>
+
+          {/* Image Preview */}
           {selectedImage && (
+             <div style={styles.previewContainer}>
             <img
               src={URL.createObjectURL(selectedImage)}
               alt="preview"
               style={styles.imagePreview}
             />
+             <button
+      onClick={() => setSelectedImage(null)}
+      style={styles.removeImageButton}
+    >
+      Remove Image
+    </button>
+            </div>
           )}
+
+          {/* Message Input + Send */}
           <div style={styles.inputContainer}>
             <textarea
               style={styles.input}
@@ -153,16 +208,31 @@ export default function NotificationScreen({ role = 'student' }) {
         </div>
       )}
 
+      {/* Notifications List */}
       <div style={styles.notificationsList}>
         {notifications.map(notification => (
           <div
-            key={notification._id || notification.id}
+            key={notification._id || notification.id} 
             style={{
               ...styles.notificationCard,
               ...(notification.read ? {} : styles.unreadCard),
-              borderLeftColor: getNotificationBorder(notification.type),
+              borderLeft: `4px solid ${getNotificationBorder(notification.type)}`,
             }}
           >
+            {/* Delete Button for Incharge */}
+            {role === 'incharge' && (
+              <button
+                style={styles.deleteButton}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(notification._id);
+                }}
+                title="Delete Notification"
+              >
+                <FiTrash size={16} color="#EF4444" />
+              </button>
+            )}
+
             <button
               style={styles.notificationContent}
               onClick={() => {
@@ -181,9 +251,7 @@ export default function NotificationScreen({ role = 'student' }) {
                   {getNotificationIcon(notification.type)}
                 </div>
                 <div style={styles.notificationMeta}>
-                  <p style={styles.notificationTitle}>
-                    {notification.title}
-                  </p>
+                  <p style={styles.notificationTitle}>{notification.title}</p>
                   <p style={styles.notificationSender}>
                     From: {notification.sender}
                   </p>
@@ -218,6 +286,7 @@ export default function NotificationScreen({ role = 'student' }) {
         ))}
       </div>
 
+      {/* Empty State */}
       {notifications.length === 0 && (
         <div style={styles.emptyState}>
           <FiBell size={48} color="#9CA3AF" />
@@ -228,6 +297,7 @@ export default function NotificationScreen({ role = 'student' }) {
         </div>
       )}
 
+      {/* Lightbox */}
       {lightboxOpen && (
         <Lightbox
           open={lightboxOpen}
@@ -245,66 +315,91 @@ const styles = {
     flexDirection: 'column',
     backgroundColor: '#F9FAFB',
     fontFamily: 'Inter, sans-serif',
+    minHeight: '100vh',
   },
   header: {
     backgroundColor: '#FFFFFF',
-    padding:20,
-    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#E5E7EB',
+    borderBottom: '1px solid #E5E7EB',
   },
+  previewContainer: {
+  position: 'relative',
+  display: 'inline-block',
+  marginBottom: 10,
+},
+removeImageButton: {
+  position: 'absolute',
+  top: 6,
+  right: 6,
+  backgroundColor: '#EF4444',
+  color: '#FFFFFF',
+  border: 'none',
+  borderRadius: 6,
+  padding: '2px 6px',
+  fontSize: 10,
+  cursor: 'pointer',
+},
+deleteButton: {
+  position: 'absolute',
+  top: 12,
+  right: 12,
+  background: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 4,
+},
   headerLeft: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: '24px',
+    fontWeight: 700,
     color: '#1F2937',
     margin: 0,
   },
   unreadBadge: {
     backgroundColor: '#EF4444',
-    borderRadius: 4,
-    width: 24,
-    height: 20,
+    borderRadius: 10,
+    minWidth: 20,
+    padding: '2px 8px',
     marginLeft: 12,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
   },
   unreadCount: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: '12px',
+    fontWeight: 700,
     color: '#FFFFFF',
+    margin: 0,
   },
   sendSection: {
     backgroundColor: '#FFFFFF',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#E5E7EB',
+    borderBottom: '1px solid #E5E7EB',
   },
   sendTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: '16px',
+    fontWeight: 600,
     color: '#1F2937',
-    marginBottom: 12,
     margin: 0,
+    marginBottom: 12,
   },
   uploadButton: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    padding: '6px 12px',
     backgroundColor: '#E0ECFF',
     borderRadius: 8,
     marginBottom: 10,
@@ -312,8 +407,8 @@ const styles = {
   },
   uploadText: {
     color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: '14px',
+    fontWeight: 600,
     margin: 0,
   },
   imagePreview: {
@@ -321,6 +416,7 @@ const styles = {
     height: 100,
     marginBottom: 10,
     borderRadius: 8,
+    objectFit: 'cover',
   },
   inputContainer: {
     display: 'flex',
@@ -331,14 +427,11 @@ const styles = {
     flex: 1,
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontWeight: '400',
+    padding: '12px 16px',
+    fontSize: '16px',
+    fontWeight: 400,
     color: '#1F2937',
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#E5E7EB',
+    border: '1px solid #E5E7EB',
     resize: 'none',
     minHeight: 80,
     marginRight: 12,
@@ -363,9 +456,9 @@ const styles = {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftStyle: 'solid',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 1px rgba(0, 0, 0, 0.03)',
+    borderLeft: '4px solid transparent',
+    boxShadow: '0 1px 1px rgba(0,0,0,0.05)',
+    position: 'relative',
   },
   unreadCard: {
     backgroundColor: '#F0F9FF',
@@ -393,25 +486,25 @@ const styles = {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: '16px',
+    fontWeight: 600,
     color: '#1F2937',
-    marginBottom: 2,
     margin: 0,
+    marginBottom: 2,
   },
   notificationSender: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: '12px',
+    fontWeight: 400,
     color: '#6B7280',
     margin: 0,
   },
   notificationMessage: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: '14px',
+    fontWeight: 400,
     color: '#4B5563',
-    lineHeight: 1.4,
-    marginBottom: 12,
+    lineHeight: '20px',
     margin: 0,
+    marginBottom: 12,
   },
   notificationImage: {
     width: '100%',
@@ -427,8 +520,8 @@ const styles = {
     alignItems: 'center',
   },
   notificationTime: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: '12px',
+    fontWeight: 400,
     color: '#9CA3AF',
     margin: 0,
   },
@@ -448,19 +541,19 @@ const styles = {
     textAlign: 'center',
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: '18px',
+    fontWeight: 600,
     color: '#6B7280',
+    margin: 0,
     marginTop: 16,
     marginBottom: 8,
-    margin: 0,
   },
   emptyMessage: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: '14px',
+    fontWeight: 400,
     color: '#9CA3AF',
     textAlign: 'center',
-    lineHeight: 1.4,
+    lineHeight: '20px',
     margin: 0,
   },
 };

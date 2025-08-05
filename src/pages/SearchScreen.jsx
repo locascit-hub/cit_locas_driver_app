@@ -1,3 +1,4 @@
+// src/pages/SearchScreen.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiAlertTriangle, FiX, FiMapPin, FiUsers, FiUser, FiMap } from 'react-icons/fi';
@@ -17,7 +18,7 @@ export default function SearchScreen() {
     setIsSearching(true);
     try {
       const resp = await fetch(
-        `https://transport-3d8k.onrender.com/api/buses?q=${encodeURIComponent(searchQuery)}`
+        `${process.env.REACT_APP_BACKEND_URL}/api/buses?q=${encodeURIComponent(searchQuery)}`
       );
       const data = await resp.json();
       setSearchResults(Array.isArray(data) ? data : []);
@@ -46,7 +47,7 @@ export default function SearchScreen() {
           <input
             style={styles.searchInput}
             type="text"
-            placeholder="Enter a Bus Number (e.g.,BUS001)"
+            placeholder="Enter a Bus Number (e.g., BUS001)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -82,10 +83,10 @@ export default function SearchScreen() {
               Search Results ({searchResults.length})
             </h2>
             {searchResults.map((bus) => (
-              <div key={bus.id} style={styles.busCard}>
+              <div key={bus.regnNumber} style={styles.busCard}>
                 <div style={styles.busHeader}>
                   <div style={styles.busInfo}>
-                    <h3 style={styles.busId}>{bus.id}</h3>
+                    <h3 style={styles.busId}>{bus.regnNumber}</h3>
                     <p style={styles.busRoute}>{bus.route}</p>
                   </div>
                   <div
@@ -101,7 +102,7 @@ export default function SearchScreen() {
                           : { ...styles.statusText, ...styles.statusTextDelayed }
                       }
                     >
-                      {bus.status ?? 'Unknown'}
+                      {bus.status ?? 'On Time'}
                     </span>
                   </div>
                 </div>
@@ -116,7 +117,7 @@ export default function SearchScreen() {
                   <div style={styles.detailRow}>
                     <FiUsers size={16} color="#6B7280" />
                     <p style={styles.detailText}>
-                      Capacity: {bus.capacity ?? '---'}
+                      RouteNo: {bus.clgNo ?? '---'}
                     </p>
                   </div>
                   <div style={styles.detailRow}>
@@ -161,7 +162,7 @@ export default function SearchScreen() {
                   style={styles.trackButton}
                   onClick={() =>
                     navigate('/route-detail', {
-                      state: { userType: 'student', busId: bus.id },
+                      state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
                     })
                   }
                 >
@@ -193,6 +194,7 @@ export default function SearchScreen() {
   );
 }
 
+// Styles object
 const styles = {
   container: {
     display: 'flex',
@@ -207,45 +209,35 @@ const styles = {
     paddingTop: 20,
     paddingLeft: 20,
     paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomStyle: 'solid',
-    borderBottomColor: '#E5E7EB',
+    borderBottom: '1px solid #E5E7EB',
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Inter',
-    fontWeight: '700',
+    fontWeight: 700,
     color: '#1F2937',
+    margin: 0,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    fontFamily: 'Inter',
-    fontWeight: '400',
+    fontWeight: 400,
     color: '#6B7280',
+    margin: 0,
   },
-  searchContainer: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
-  },
+  searchContainer: { padding: 20, backgroundColor: '#FFFFFF' },
   searchInputContainer: {
     display: 'flex',
-    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
     borderRadius: 12,
     padding: '0 16px',
     marginBottom: 12,
-    borderWidth: 1,
-    borderStyle: 'solid',
-    borderColor: '#E5E7EB',
+    border: '1px solid #E5E7EB',
   },
   searchInput: {
     flex: 1,
-    padding: '12px 12px',
+    padding: '12px',
     fontSize: 16,
-    fontFamily: 'Inter',
-    fontWeight: '400',
     color: '#1F2937',
     border: 'none',
     outline: 'none',
@@ -259,180 +251,18 @@ const styles = {
   searchButton: {
     backgroundColor: '#2563EB',
     borderRadius: 12,
-    padding: '12px 20px',
-    alignItems: 'center',
+    padding: '12px',
     border: 'none',
     cursor: 'pointer',
     width: '100%',
   },
   searchButtonText: {
     fontSize: 16,
-    fontFamily: 'Inter',
-    fontWeight: '600',
+    fontWeight: 600,
     color: '#FFFFFF',
   },
-  resultsContainer: {
-    padding: 20,
-    flex: 1,
-  },
-  resultsTitle: {
-    fontSize: 18,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
-  },
-  busCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    boxShadow: '0 2px 3px rgba(0, 0, 0, 0.1)',
-  },
-  busHeader: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  busInfo: { flex: 1 },
-  busId: {
-    fontSize: 18,
-    fontFamily: 'Inter',
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  busRoute: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#6B7280',
-    marginTop: 2,
-  },
-  statusBadge: {
-    padding: '6px 12px',
-    borderRadius: 20,
-  },
-  statusOnTime: { backgroundColor: '#D1FAE5' },
-  statusDelayed: { backgroundColor: '#FEE2E2' },
-  statusText: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-  },
-  statusTextOnTime: { color: '#059669' },
-  statusTextDelayed: { color: '#DC2626' },
-  busDetails: { marginBottom: 16 },
-  detailRow: { display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  detailText: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-  routeSection: { marginBottom: 16 },
-  routeTitle: {
-    fontSize: 16,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 12,
-  },
-  stopsContainer: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16 },
-  stopItem: { display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  stopDot: { width: 8, height: 8, borderRadius: '50%', backgroundColor: '#D1D5DB', marginRight: 12 },
-  currentStopDot: { backgroundColor: '#2563EB', width: 12, height: 12, borderRadius: '50%', marginRight: 12 },
-  stopText: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#6B7280',
-  },
-  currentStopText: {
-    fontWeight: '600',
-    color: '#2563EB',
-    flex: 1,
-    fontFamily: 'Inter',
-  },
-  stopTime: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#9CA3AF',
-  },
-  trackButton: {
-    backgroundColor: '#059669',
-    borderRadius: 12,
-    padding: '12px 20px',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    cursor: 'pointer',
-  },
-  trackButtonText: {
-    fontSize: 16,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginLeft: 8,
-  },
-  noResults: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  noResultsText: {
-    fontSize: 18,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  noResultsSubtext: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#9CA3AF',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  searchPrompt: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  promptText: {
-    fontSize: 18,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    color: '#6B7280',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  promptSubtext: {
-    fontSize: 14,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    color: '#9CA3AF',
-    marginTop: 8,
-    textAlign: 'center',
-  },
-  spinner: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
+  resultsContainer: { padding: 20, flex: 1 },
+  spinner: { display: 'flex', justifyContent: 'center', padding: 20 },
   dot: {
     width: 10,
     height: 10,
@@ -441,4 +271,55 @@ const styles = {
     margin: 5,
     animation: 'bounce 1s infinite ease-in-out',
   },
+  resultsTitle: { fontSize: 18, fontWeight: 600, color: '#1F2937', marginBottom: 16 },
+  busCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    boxShadow: '0 2px 3px rgba(0,0,0,0.1)',
+  },
+  busHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  busInfo: { flex: 1 },
+  busId: { fontSize: 18, fontWeight: 700, color: '#1F2937', margin: 0 },
+  busRoute: { fontSize: 16,fontWeight:500, color: '#050505ff', margin: '4px 0 0' },
+  statusBadge: { padding: '6px 12px', borderRadius: 20 },
+  statusOnTime: { backgroundColor: '#D1FAE5' },
+  statusDelayed: { backgroundColor: '#FEE2E2' },
+  statusText: { fontSize: 12, fontWeight: 600 },
+  statusTextOnTime: { color: '#059669' },
+  statusTextDelayed: { color: '#DC2626' },
+  busDetails: { marginBottom: 16 },
+  detailRow: { display: 'flex', alignItems: 'center', marginBottom: 8 },
+  detailText: { marginLeft: 8, fontSize: 14, color: '#6B7280' },
+  routeSection: { marginBottom: 16 },
+  routeTitle: { fontSize: 16, fontWeight: 600, marginBottom: 12, color: '#1F2937' },
+  stopsContainer: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16 },
+  stopItem: { display: 'flex', alignItems: 'center', marginBottom: 12 },
+  stopDot: { width: 8, height: 8, borderRadius: '50%', backgroundColor: '#D1D5DB', marginRight: 12 },
+  currentStopDot: { backgroundColor: '#2563EB', width: 12, height: 12, borderRadius: '50%', marginRight: 12 },
+  stopText: { flex: 1, fontSize: 14, color: '#6B7280' },
+  currentStopText: { flex: 1, fontWeight: 600, color: '#2563EB' },
+  stopTime: { fontSize: 12, color: '#9CA3AF' },
+  trackButton: {
+    backgroundColor: '#059669',
+    borderRadius: 12,
+    padding: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    border: 'none',
+    cursor: 'pointer',
+  },
+  trackButtonText: { marginLeft: 8, fontSize: 16, fontWeight: 600, color: '#FFFFFF' },
+  noResults: { textAlign: 'center', padding: '60px 0' },
+  noResultsText: { fontSize: 18, fontWeight: 600, color: '#6B7280', margin: 0 },
+  noResultsSubtext: { fontSize: 14, color: '#9CA3AF', marginTop: 8 },
+  searchPrompt: { textAlign: 'center', padding: '80px 0' },
+  promptText: { fontSize: 18, fontWeight: 600, color: '#6B7280', margin: 0 },
+  promptSubtext: { fontSize: 14, color: '#9CA3AF', marginTop: 8 },
 };
