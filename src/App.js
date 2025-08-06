@@ -41,6 +41,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}
     </>
