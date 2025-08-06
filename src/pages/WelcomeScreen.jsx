@@ -15,7 +15,7 @@ export default function WelcomeScreen({ installPrompt, handleInstallClick }) {
               style={styles.logoImage}
             />
           </div>
-          <h1 style={styles.title}>CIT Transport 3</h1>
+          <h1 style={styles.title}>CIT Transport 5</h1>
           <p style={styles.subtitle}>Smart Transportation System</p>
         </div>
 
