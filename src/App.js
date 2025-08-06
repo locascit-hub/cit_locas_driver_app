@@ -41,7 +41,6 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
-        <Route path="*" element={<div style={{padding:40}}>Not Found</div>} />
       </Routes>
       {showNav && <NavBar />}
     </>
