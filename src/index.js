@@ -10,5 +10,11 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
 // register SW
-serviceWorkerRegistration.unregister();
-
+// serviceWorkerRegistration.unregister();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    for (let registration of registrations) {
+      registration.unregister();
+    }
+  });
+}
