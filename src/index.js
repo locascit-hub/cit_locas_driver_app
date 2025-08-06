@@ -10,5 +10,5 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 
 // register SW
-serviceWorkerRegistration.register();
+serviceWorkerRegistration.unregister();
 
