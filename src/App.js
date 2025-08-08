@@ -1,12 +1,10 @@
-import React, { useMemo, useEffect,useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import React, { useMemo, useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Navigate } from 'react-router-dom';
 
-import { SocketContext } from './contexts';
-import { UserContext } from './contexts';
+import { SocketContext, UserContext } from './contexts';
 import NavBar from './components/NavBar';
 
 // Pages
@@ -20,16 +18,19 @@ import NotificationScreen from './pages/NotificationScreen';
 import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
 
-const WS_URL = process.env.REACT_APP_BACKEND_URL;
-const BACKEND_SUBSCRIBE_URL = `${process.env.REACT_APP_BACKEND_URL}/subscribe`;
-const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+const WS_URL = 'https://transport-3d8k.onrender.com'; // Keep WSS/HTTPS in production
 
+// Utility: Detect iOS Safari/Chrome (all use WebKit)
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+};
 
-// Root wrapper to decide when to show NavBar
-function AppShell({ installPrompt, handleInstallClick }) { 
+// Root wrapper
+function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
-  const hideNavOn = ['/', '/login', '/register']; 
+  const hideNavOn = ['/', '/login', '/register'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
+
   return (
     <>
       <Routes>
@@ -50,76 +51,63 @@ function AppShell({ installPrompt, handleInstallClick }) {
 }
 
 export default function App() {
-
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [role, setRole] = useState(null);
- 
-  const socket = useMemo(() => io('https://transport-3d8k.onrender.com', { transports: ['websocket'] }), []);
+  const [showInstallButton, setShowInstallButton] = useState(false);
+
+  // WebSocket init
+  const socket = useMemo(() => io(WS_URL, { transports: ['websocket'] }), []);
 
   useEffect(() => {
     return () => socket.disconnect();
   }, [socket]);
 
+  // Notification permission handling
   useEffect(() => {
-
-    
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission()
-        .then(permission => {
-          if (permission === "granted") {
-            console.log("Notification permission granted");
-          } else {
-            console.log("Notification permission denied");
-          }
-        });
+    if (!isIOS() && 'Notification' in window) {
+      if (Notification.permission !== 'granted') {
+        Notification.requestPermission()
+          .then((permission) => {
+            console.log(`Notification permission: ${permission}`);
+          })
+          .catch((err) => {
+            console.warn('Notification request failed:', err);
+          });
+      }
+    } else {
+      console.log('Notifications not supported on this device/browser.');
     }
 
     return () => socket.close();
+  }, [socket]);
+
+  // Install prompt handler
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallButton(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
-    const [showInstallButton, setShowInstallButton] = useState(false);
-  
-     useEffect(() => {
-       const handler = (e) => {
-         // Prevent Chrome from automatically showing the prompt
-         e.preventDefault();
-         setDeferredPrompt(e);
-         setShowInstallButton(true); // Show our custom install button
-       };
-  
-       window.addEventListener('beforeinstallprompt', handler);
-  
-       return () => {
-         window.removeEventListener('beforeinstallprompt', handler);
-      };
-     }, []);
-
-
-    const handleInstallClick = async () => {
+  const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-
-    deferredPrompt.prompt(); // Must be called from user gesture
-
+    deferredPrompt.prompt();
     const choiceResult = await deferredPrompt.userChoice;
-    if (choiceResult.outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
+    console.log(`User ${choiceResult.outcome === 'accepted' ? 'accepted' : 'dismissed'} the install prompt`);
     setDeferredPrompt(null);
     setShowInstallButton(false);
   };
 
-
-
-
   return (
     <SocketContext.Provider value={socket}>
       <UserContext.Provider value={{ role, setRole }}>
-      <Router>
-        <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} />
-      </Router>
-      <ToastContainer position="top-right" autoClose={3000} />
+        <Router>
+          <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} />
+        </Router>
+        <ToastContainer position="top-right" autoClose={3000} />
       </UserContext.Provider>
     </SocketContext.Provider>
   );
