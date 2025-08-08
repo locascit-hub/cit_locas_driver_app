@@ -94,6 +94,7 @@ export default function LoginScreen() {
       });
 
       await subscribeUserToPush(email.trim());
+      console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
     } else if (userType === 'driver') {
