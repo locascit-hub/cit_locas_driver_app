@@ -1,6 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTruck, FiSmartphone, FiMail, FiLock } from 'react-icons/fi';
+import { UserContext ,SocketContext} from '../contexts';
+
+ 
+
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -8,6 +12,11 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('student');
   const [otpPage, setOtpPage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { setRole } = useContext(UserContext);
+  const socket = useContext(SocketContext);
+
+
   const [otp, setOtp] = useState('');
   const navigate = useNavigate();
 
@@ -58,10 +67,14 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (userType === 'student') {
+      setRole('student');
       if (!email) {
         alert('Please enter your email');
         return;
       }
+
+      setLoading(true);
+      try{
       if(!otpPage) {
       // For student login, we can use the email as the identifier
       //generate otp in server and send it to email
@@ -82,21 +95,31 @@ export default function LoginScreen() {
       return;
     }
     else{
-      await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/verify-otp`, {
+      const response=await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), otp: otp.trim() })
       })
-      .then(response => {
+      
+        const data = await response.json();
         if (!response.ok) {
           throw new Error('Invalid OTP or email');
         }
-      });
+      
+        socket.emit('registerStudent', data.studentId);
 
       await subscribeUserToPush(email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
+  } catch (err) {
+        alert(`Login Error: ${err.message}`);
+      }finally {
+        setLoading(false);
+      }
+      
+
     } else if (userType === 'driver') {
+      setRole('driver');
         // Driver login logic here, if any
         navigate('/home', { replace: true, state: { role: 'driver', mobile } });
     } else if (userType === 'incharge') {
@@ -117,8 +140,9 @@ export default function LoginScreen() {
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Login failed');
+        setRole('incharge');
 
-        navigate('/main', { replace: true, state: { role: 'incharge', email } });
+        navigate('/home', { replace: true, state: { role: 'incharge', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);
       }
@@ -223,12 +247,19 @@ export default function LoginScreen() {
             </div>
           )}
           
-          <button style={styles.loginButton} onClick={handleLogin}>
-            <span style={styles.loginButtonText}>
-               Sign In
-            </span>
-          </button>
-        </div>
+            <button style={{ 
+             ...styles.loginButton, 
+             backgroundColor: loading ? '#94a3b8' : '#2563EB',
+              cursor: loading ? 'not-allowed' : 'pointer'
+           }} 
+           onClick={handleLogin} 
+                 disabled={loading}
+            >
+  <span style={styles.loginButtonText}>
+    {loading ? 'Signing in...' : 'Sign In'}
+  </span>
+</button>      
+  </div>
       </div>
     </div>
   );

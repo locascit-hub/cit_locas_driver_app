@@ -58,7 +58,6 @@ export default function NotificationScreen() {
 
   
 
-  const HOST = 'https://transport-3d8k.onrender.com';
 
   useEffect(() => {
     fetchNotifications();
@@ -72,7 +71,7 @@ export default function NotificationScreen() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${HOST}/api/notifications`);
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications`);
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
@@ -86,7 +85,7 @@ export default function NotificationScreen() {
 
   try {
     console.log('Frontend sending delete request for id:', id);
-    const res = await fetch(`${HOST}/api/notifications/${id}`, {
+    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications/${id}`, {
       method: 'DELETE',
     });
     const data = await res.json();
@@ -117,12 +116,13 @@ export default function NotificationScreen() {
     formData.append('message', newNotification);
     formData.append('sender', 'Transport Incharge');
     formData.append('type', 'info');
+    formData.append('targetStudentIds', 'all'); // Assuming 'all' means all students
     if (selectedImage) {
       formData.append('image', selectedImage);
     }
 
     try {
-      const res = await fetch(`${HOST}/api/notifications`, {
+      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications`, {
         method: 'POST',
         body: formData,
       });
@@ -237,7 +237,7 @@ return (
               style={styles.notificationContent}
               onClick={() => {
                 if (notification.imageUrl) {
-                  const uri = `${HOST}${notification.imageUrl}`;
+                  const uri = `${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}`;
                   setLightboxImages([{ src: uri }]);
                   setLightboxOpen(true);
                 } else {
@@ -264,12 +264,12 @@ return (
 
               {notification.imageUrl && (
                 <img
-                  src={`${HOST}${notification.imageUrl}`}
+                  src={`${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}`}
                   alt="attachment"
                   style={styles.notificationImage}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setLightboxImages([{ src: `${HOST}${notification.imageUrl}` }]);
+                    setLightboxImages([{ src: `${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}` }]);
                     setLightboxOpen(true);
                   }}
                 />
