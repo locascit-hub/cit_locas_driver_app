@@ -63,10 +63,25 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
-  event.waitUntil(
-    self.registration.showNotification(data.title || "Push", {
-      body: data.body || "New message!",
-      icon: "/logo192.png",
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/badge.png',
+    data: data.data,
+    requireInteraction: false, // notification stays until user clicks (optional)
+    silent: false // request sound if the system allows it
+  };
+   event.waitUntil(
+    self.registration.showNotification(data.title, options).then(() => {
+      if (data.data && data.data.playSound) {
+        self.playNotificationSound();
+      }
     })
   );
 });
+
+self.playNotificationSound = function() {
+  
+  const audio = new Audio('/sound/soundnot.wav');
+  audio.play().catch(err => console.error('Sound play failed:', err));
+};
