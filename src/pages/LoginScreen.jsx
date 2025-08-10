@@ -106,7 +106,7 @@ export default function LoginScreen() {
           throw new Error('Invalid OTP or email');
         }
 
-       
+       localStorage.setItem('token', data.token);
       
         socket.emit('registerStudent', data.studentId);
 
