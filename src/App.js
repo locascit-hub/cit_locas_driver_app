@@ -59,6 +59,14 @@ export default function App() {
   const socket = useMemo(() => io(WS_URL, { transports: ['websocket'] }), []);
 
   useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    // Optionally verify token with backend
+    console.log('User is already logged in');
+  }
+}, []);
+
+  useEffect(() => {
     return () => socket.disconnect();
   }, [socket]);
 

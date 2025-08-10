@@ -105,10 +105,12 @@ export default function LoginScreen() {
         if (!response.ok) {
           throw new Error('Invalid OTP or email');
         }
+
+        localStorage.setItem('token', data.token);
       
         socket.emit('registerStudent', data.studentId);
 
-      await subscribeUserToPush(email.trim());
+      //await subscribeUserToPush(email.trim());
       console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
