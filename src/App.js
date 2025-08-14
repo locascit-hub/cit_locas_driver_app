@@ -30,11 +30,13 @@ function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
   const hideNavOn = ['/', '/login', '/register'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
-  
+
+  const isLoggedIn = !!localStorage.getItem('test');
+
   return (
     <>
       <Routes>
-        <Route path="/" element={<WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
+        <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />

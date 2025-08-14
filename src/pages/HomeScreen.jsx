@@ -17,7 +17,7 @@ export default function HomeScreen() {
     <div style={styles.container}>
       <div style={styles.header}>
         <div style={styles.headerContent}>
-          <p style={styles.greeting}>Hello Everyone!</p>
+          <p style={styles.greeting}>Hello 10 Everyone!</p>
           <p style={styles.welcomeText}>Welcome to CIT Transport</p>
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
