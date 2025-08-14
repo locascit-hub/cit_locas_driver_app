@@ -109,6 +109,8 @@ export default function LoginScreen() {
         socket.emit('registerStudent', data.studentId);
 
       await subscribeUserToPush(email.trim());
+      localStorage.setItem('test',data.token);
+      localStorage.setItem('sno',data.sno);
       console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
     }

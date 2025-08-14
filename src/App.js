@@ -30,7 +30,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
   const hideNavOn = ['/', '/login', '/register'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
-
+  
   return (
     <>
       <Routes>
