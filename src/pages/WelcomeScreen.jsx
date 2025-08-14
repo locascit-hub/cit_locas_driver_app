@@ -1,9 +1,46 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {jwtDecode} from 'jwt-decode';
 import { FiMapPin, FiUsers, FiNavigation } from 'react-icons/fi';
 
 export default function WelcomeScreen({ installPrompt, handleInstallClick }) {
   const navigate = useNavigate();
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000; // in seconds
+        if (decoded.exp > currentTime) {
+          navigate('/home', { replace: true });
+        } else {
+          localStorage.removeItem('token'); // expired token
+        }
+      } catch (err) {
+        console.error('Invalid token:', err);
+        localStorage.removeItem('token');
+      }
+    }
+  }, [navigate]);
+
+  const handleGetStarted = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode(token);
+        const currentTime = Date.now() / 1000;
+        if (decoded.exp > currentTime) {
+          navigate('/home', { replace: true });
+          return;
+        } else {
+          localStorage.removeItem('token');
+        }
+      } catch (err) {
+        localStorage.removeItem('token');
+      }
+    }
+    navigate('/login');
+  };
   return (
     <div style={styles.container}>
       <div style={styles.content}>
@@ -39,7 +76,7 @@ export default function WelcomeScreen({ installPrompt, handleInstallClick }) {
           </button>
         )}
         {!installPrompt && (
-                  <button style={styles.getStartedButton} onClick={() => navigate('/login')}>
+                  <button style={styles.getStartedButton} onClick={handleGetStarted}>
           <span style={styles.getStartedText}>Get Started</span>
         </button>
         )}
