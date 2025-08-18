@@ -2,7 +2,7 @@ import React, { useState, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTruck, FiSmartphone, FiMail, FiLock } from 'react-icons/fi';
 import { UserContext ,SocketContext} from '../contexts';
-
+import getEndpoint from '../utils/loadbalancer';
  
 
 
@@ -20,7 +20,6 @@ export default function LoginScreen() {
   const [otp, setOtp] = useState('');
   const navigate = useNavigate();
 
-  const BACKEND_SUBSCRIBE_URL = `${process.env.REACT_APP_BACKEND_URL}/subscribe`;
   const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
 
   const urlBase64ToUint8Array = (base64String) => {
@@ -42,8 +41,8 @@ export default function LoginScreen() {
         });
         
         console.log("Subscription created successfully:", subscription);
-        
-        const response = await fetch(BACKEND_SUBSCRIBE_URL, {
+
+        const response = await fetch(`${getEndpoint()}/subscribe`, {
           method: "POST",
           body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
           headers: { "Content-Type": "application/json" },
@@ -78,7 +77,7 @@ export default function LoginScreen() {
       if(!otpPage) {
       // For student login, we can use the email as the identifier
       //generate otp in server and send it to email
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/login`, {
+      const response = await fetch(`${getEndpoint('helper')}/api/auth/student/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() })
@@ -95,7 +94,7 @@ export default function LoginScreen() {
       return;
     }
     else{
-      const response=await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/student/verify-otp`, {
+      const response=await fetch(`${getEndpoint()}/api/auth/student/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), otp: otp.trim() })
@@ -132,7 +131,7 @@ export default function LoginScreen() {
       }
 
       try {
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/incharge/login`, {
+        const response = await fetch(`${getEndpoint()}/api/incharge/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -145,6 +144,7 @@ export default function LoginScreen() {
         if (!response.ok) throw new Error(data.error || 'Login failed');
         setRole('incharge');
 
+      localStorage.setItem('test',data.token);
         navigate('/home', { replace: true, state: { role: 'incharge', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);

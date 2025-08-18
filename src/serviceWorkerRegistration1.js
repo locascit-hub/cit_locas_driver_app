@@ -58,25 +58,28 @@ function registerValidSW(swUrl, config) {
     .then((registration) => {
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
-        if (installingWorker == null) {
-          return;
-        }
+        if (installingWorker == null) return;
+
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
-if (navigator.serviceWorker.controller) {
-  console.log('New content is available. Reloading...');
+            if (navigator.serviceWorker.controller) {
+              console.log("New content is available — updating...");
+
+              // Skip waiting so new SW becomes active right now
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: "SKIP_WAITING" });
+              }
+
               // Wait until the new SW is controlling this page before reload
               navigator.serviceWorker.addEventListener("controllerchange", () => {
                 window.location.reload();
               });
-}
- else {
-              // At this point, everything has been precached.
-              // It's the perfect time to display a
-              // "Content is cached for offline use." message.
-              console.log('Content is cached for offline use.');
 
-              // Execute callback
+              if (config && config.onUpdate) {
+                config.onUpdate(registration);
+              }
+            } else {
+              console.log("Content is cached for offline use.");
               if (config && config.onSuccess) {
                 config.onSuccess(registration);
               }
@@ -86,9 +89,11 @@ if (navigator.serviceWorker.controller) {
       };
     })
     .catch((error) => {
-      console.error('Error during service worker registration:', error);
+      console.error("Error during service worker registration:", error);
     });
 }
+
+
 
 function checkValidServiceWorker(swUrl, config) {
   // Check if the service worker can be found. If it can't reload the page.

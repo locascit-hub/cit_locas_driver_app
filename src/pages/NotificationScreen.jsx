@@ -9,101 +9,121 @@ import {
   FiImage,
   FiTrash,
 } from 'react-icons/fi';
-import { useLocation } from 'react-router-dom';
-import { SocketContext } from '../contexts';
+import { useNavigate } from 'react-router-dom';
+import { SocketContext, UserContext } from '../contexts';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
-import { UserContext } from '../contexts';
+import getEndpoint from '../utils/loadbalancer';
+import { openDB } from 'idb';
 
-function getNotificationIcon(type) {
-  switch (type) {
-    case 'warning':
-      return <FiAlertTriangle size={20} color="#F59E0B" />;
-    case 'alert':
-      return <FiAlertCircle size={20} color="#EF4444" />;
-    case 'success':
-      return <FiCheckCircle size={20} color="#10B981" />;
-    default:
-      return <FiInfo size={20} color="#3B82F6" />;
-  }
-}
+// ---------- IndexedDB Helper ----------
+const DB_NAME = 'notifications-db';
+const STORE_NAME = 'notifications';
 
-function getNotificationBorder(type) {
-  switch (type) {
-    case 'warning':
-      return '#F59E0B';
-    case 'alert':
-      return '#EF4444';
-    case 'success':
-      return '#10B981';
-    default:
-      return '#3B82F6';
-  }
-}
+const dbPromise = openDB(DB_NAME, 1, {
+  upgrade(db) {
+    db.createObjectStore(STORE_NAME, { keyPath: '_id' });
+  },
+});
 
+const saveNotifications = async (notifs) => {
+  const db = await dbPromise;
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  notifs.forEach(notif => tx.store.put(notif));
+  await tx.done;
+};
+
+const getAllNotifications = async () => {
+  const db = await dbPromise;
+  return await db.getAll(STORE_NAME);
+};
+
+const getLatestNotificationTime = async () => {
+  const db = await dbPromise;
+  const all = await db.getAll(STORE_NAME);
+  if (all.length === 0) return 0;
+  return Math.max(...all.map(n => new Date(n.time).getTime()));
+};
+
+// ---------- NotificationScreen ----------
 export default function NotificationScreen() {
- 
   const { role } = useContext(UserContext);
-
   const socket = useContext(SocketContext);
+  const navigate = useNavigate();
+
   const [notifications, setNotifications] = useState([]);
   const [newNotification, setNewNotification] = useState('');
   const [selectedImage, setSelectedImage] = useState(null);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-
-
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
 
-  
-
-
+  // Redirect if no user data
   useEffect(() => {
-    fetchNotifications();
-    socket.on('studentNotification', (notif) => {
-      if (role === 'student' || role === 'driver') {
-        setNotifications(prev => [notif, ...prev]);
-      }
-    });
-    return () => socket.off('studentNotification');
-  }, [socket, role]);
+    const storedUserData = localStorage.getItem('test');
+    if (!storedUserData) navigate('/');
+  }, []);
 
+  // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications`);
-      const data = await res.json();
-      setNotifications(data);
+      // 1️⃣ Load existing notifications from IndexedDB
+      const storedNotifications = await getAllNotifications();
+      setNotifications(storedNotifications);
+
+      // 2️⃣ Get latest message time
+      const latestTime = await getLatestNotificationTime();
+
+      // 3️⃣ Fetch only new notifications
+      const res = await fetch(`${getEndpoint()}/api/notifications?after=${latestTime}`);
+      const newNotifs = await res.json();
+
+      if (newNotifs.length > 0) {
+        setNotifications(prev => [...newNotifs, ...prev]);
+        await saveNotifications(newNotifs);
+      }
     } catch (err) {
       console.error('Error fetching notifications:', err);
     }
   };
 
-  const handleDelete = async (id) => {
-  const confirmed = window.confirm('Are you sure you want to delete this notification?');
-  if (!confirmed) return;
+  useEffect(() => {
+    fetchNotifications();
 
-  try {
-    console.log('Frontend sending delete request for id:', id);
-    const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications/${id}`, {
-      method: 'DELETE',
+    // 4️⃣ WebSocket listener for real-time updates
+    socket.on('studentNotification', async (notif) => {
+      if (role === 'student' || role === 'driver') {
+        setNotifications(prev => [notif, ...prev]);
+        await saveNotifications([notif]);
+      }
     });
-    const data = await res.json();
-    if (data.success) {
-      setNotifications(prev => prev.filter(n => n._id !== id));
-      alert('Deleted successfully');
-    } else {
-      throw new Error(data.error || 'Delete failed');
-    }
-  } catch (err) {
-    alert('Error: ' + err.message);
-  }
-};
 
-  const handleImageSelect = (e) => {
-    if (e.target.files?.[0]) {
-      setSelectedImage(e.target.files[0]);
+    return () => socket.off('studentNotification');
+  }, [socket, role]);
+
+  // ---------- Delete Notification ----------
+  const handleDelete = async (id) => {
+    const confirmed = window.confirm('Are you sure you want to delete this notification?');
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${getEndpoint()}/api/notifications/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setNotifications(prev => prev.filter(n => n._id !== id));
+        alert('Deleted successfully');
+      } else {
+        throw new Error(data.error || 'Delete failed');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
     }
+  };
+
+  // ---------- Send Notification ----------
+  const handleImageSelect = (e) => {
+    if (e.target.files?.[0]) setSelectedImage(e.target.files[0]);
   };
 
   const sendNotification = async () => {
@@ -111,18 +131,17 @@ export default function NotificationScreen() {
       alert('Please enter a message or select an image');
       return;
     }
+
     const formData = new FormData();
     formData.append('title', 'Announcement');
     formData.append('message', newNotification);
     formData.append('sender', 'Transport Incharge');
     formData.append('type', 'info');
-    formData.append('targetStudentIds', 'all'); // Assuming 'all' means all students
-    if (selectedImage) {
-      formData.append('image', selectedImage);
-    }
+    formData.append('targetStudentIds', 'all');
+    if (selectedImage) formData.append('image', selectedImage);
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/notifications`, {
+      const res = await fetch(`${getEndpoint()}/api/notifications`, {
         method: 'POST',
         body: formData,
       });
@@ -137,7 +156,27 @@ export default function NotificationScreen() {
     }
   };
 
-return (
+  // ---------- Helpers ----------
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'warning': return <FiAlertTriangle size={20} color="#F59E0B" />;
+      case 'alert': return <FiAlertCircle size={20} color="#EF4444" />;
+      case 'success': return <FiCheckCircle size={20} color="#10B981" />;
+      default: return <FiInfo size={20} color="#3B82F6" />;
+    }
+  };
+
+  const getNotificationBorder = (type) => {
+    switch (type) {
+      case 'warning': return '#F59E0B';
+      case 'alert': return '#EF4444';
+      case 'success': return '#10B981';
+      default: return '#3B82F6';
+    }
+  };
+
+  // ---------- Render ----------
+  return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
@@ -145,52 +184,30 @@ return (
           <p style={styles.title}>Notifications</p>
           {notifications.filter(n => !n.read).length > 0 && (
             <div style={styles.unreadBadge}>
-              <p style={styles.unreadCount}>
-                {notifications.filter(n => !n.read).length}
-              </p>
+              <p style={styles.unreadCount}>{notifications.filter(n => !n.read).length}</p>
             </div>
           )}
         </div>
         <FiBell size={24} color="#2563EB" />
       </div>
 
-      {/* Send Notification (incharge only) */}
+      {/* Send Notification */}
       {role === 'incharge' && (
         <div style={styles.sendSection}>
           <p style={styles.sendTitle}>Send Notification</p>
-
-          {/* Upload Image Button */}
           <label style={styles.uploadButton}>
             <FiImage size={16} color="#2563EB" style={{ marginRight: 6 }} />
             <span style={styles.uploadText}>
               {selectedImage ? 'Change Selected Image' : 'Upload Image'}
             </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              hidden
-            />
+            <input type="file" accept="image/*" onChange={handleImageSelect} hidden />
           </label>
-
-          {/* Image Preview */}
           {selectedImage && (
-             <div style={styles.previewContainer}>
-            <img
-              src={URL.createObjectURL(selectedImage)}
-              alt="preview"
-              style={styles.imagePreview}
-            />
-             <button
-      onClick={() => setSelectedImage(null)}
-      style={styles.removeImageButton}
-    >
-      Remove Image
-    </button>
+            <div style={styles.previewContainer}>
+              <img src={URL.createObjectURL(selectedImage)} alt="preview" style={styles.imagePreview} />
+              <button style={styles.removeImageButton} onClick={() => setSelectedImage(null)}>Remove Image</button>
             </div>
           )}
-
-          {/* Message Input + Send */}
           <div style={styles.inputContainer}>
             <textarea
               style={styles.input}
@@ -198,10 +215,7 @@ return (
               value={newNotification}
               onChange={(e) => setNewNotification(e.target.value)}
             />
-            <button
-              style={styles.sendButton}
-              onClick={sendNotification}
-            >
+            <button style={styles.sendButton} onClick={sendNotification}>
               <FiSend size={16} color="#FFFFFF" />
             </button>
           </div>
@@ -212,14 +226,13 @@ return (
       <div style={styles.notificationsList}>
         {notifications.map(notification => (
           <div
-            key={notification._id || notification.id} 
+            key={notification._id || notification.id}
             style={{
               ...styles.notificationCard,
               ...(notification.read ? {} : styles.unreadCard),
               borderLeft: `4px solid ${getNotificationBorder(notification.type)}`,
             }}
           >
-            {/* Delete Button for Incharge */}
             {role === 'incharge' && (
               <button
                 style={styles.deleteButton}
@@ -237,7 +250,7 @@ return (
               style={styles.notificationContent}
               onClick={() => {
                 if (notification.imageUrl) {
-                  const uri = `${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}`;
+                  const uri = `${notification.imageUrl}`;
                   setLightboxImages([{ src: uri }]);
                   setLightboxOpen(true);
                 } else {
@@ -247,24 +260,18 @@ return (
               }}
             >
               <div style={styles.notificationHeader}>
-                <div style={styles.notificationIcon}>
-                  {getNotificationIcon(notification.type)}
-                </div>
+                <div style={styles.notificationIcon}>{getNotificationIcon(notification.type)}</div>
                 <div style={styles.notificationMeta}>
                   <p style={styles.notificationTitle}>{notification.title}</p>
-                  <p style={styles.notificationSender}>
-                    From: {notification.sender}
-                  </p>
+                  <p style={styles.notificationSender}>From: {notification.sender}</p>
                 </div>
               </div>
 
-              <p style={styles.notificationMessage}>
-                {notification.message}
-              </p>
+              <p style={styles.notificationMessage}>{notification.message}</p>
 
               {notification.imageUrl && (
                 <img
-                  src={`${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}`}
+                  src={`${notification.imageUrl}`}
                   alt="attachment"
                   style={styles.notificationImage}
                   onClick={(e) => {
@@ -276,9 +283,7 @@ return (
               )}
 
               <div style={styles.notificationFooter}>
-                <span style={styles.notificationTime}>
-                  {new Date(notification.time).toLocaleString()}
-                </span>
+                <span style={styles.notificationTime}>{new Date(notification.time).toLocaleString()}</span>
                 {!notification.read && <span style={styles.unreadDot} />}
               </div>
             </button>
@@ -291,9 +296,7 @@ return (
         <div style={styles.emptyState}>
           <FiBell size={48} color="#9CA3AF" />
           <h4 style={styles.emptyTitle}>No Notifications</h4>
-          <p style={styles.emptyMessage}>
-            You're all caught up! New notifications will appear here.
-          </p>
+          <p style={styles.emptyMessage}>You're all caught up! New notifications will appear here.</p>
         </div>
       )}
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, LayersControl,LayerGroup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import '../styles/routedetailscreen.css'; // Assuming you have a CSS file for styles
+
+import getEndpoint from '../utils/loadbalancer';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -13,6 +15,13 @@ L.Icon.Default.mergeOptions({
 });
 
 export default function RouteDetailScreen() {
+    const navigate = useNavigate();
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('test');
+      if (!storedUserData) {
+        navigate('/');
+      }
+    }, []);
   const { state } = useLocation();
   const { _id, clgNo } = state || {}; 
   const [loc, setLoc] = useState(null);
@@ -45,7 +54,7 @@ const busDivIcon = (busNo) =>
 
   const fetchLocation = async () => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/get-location/obu/${_id}`);
+      const res = await fetch(`${getEndpoint()}/get-location/obu/${_id}`);
       if (!res.ok) {
         if (res.status === 404) {
           setLoc(null);

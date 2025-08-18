@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'r
 import { io } from 'socket.io-client';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import decryptJWT from './utils/decrypt';
 
 import { SocketContext, UserContext } from './contexts';
 import NavBar from './components/NavBar';
@@ -26,7 +27,7 @@ const isIOS = () => {
 };
 
 // Root wrapper
-function AppShell({ installPrompt, handleInstallClick }) {
+function AppShell({ installPrompt, handleInstallClick,userData }) {
   const location = useLocation();
   const hideNavOn = ['/', '/login', '/register'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
@@ -43,7 +44,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/tracking" element={<TrackingScreen />} />
         <Route path="/notifications" element={<NotificationScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/profile" element={<ProfileScreen userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -56,15 +57,16 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [role, setRole] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   // WebSocket init
   const socket = useMemo(() => io(WS_URL, { transports: ['websocket'] }), []);
 
-useEffect(() => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    // Optionally verify token with backend
-    console.log('User is already logged in');
+useEffect(async () => {
+  const token = localStorage.getItem('test');
+  if(token) {
+    const userData = await decryptJWT(token);
+    setUserData(userData);
   }
 }, []);
 
@@ -115,7 +117,7 @@ useEffect(() => {
     <SocketContext.Provider value={socket}>
       <UserContext.Provider value={{ role, setRole }}>
         <Router>
-          <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} />
+          <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} userData={userData} />
         </Router>
         <ToastContainer position="top-right" autoClose={3000} />
       </UserContext.Provider>

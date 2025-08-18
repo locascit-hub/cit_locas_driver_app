@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell } from 'react-icons/fi';
 // Import the new CSS file
@@ -6,6 +6,13 @@ import '../styles/homescreen.css';
 
 export default function HomeScreen() {
   const navigate = useNavigate();
+
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('test');
+      if (!storedUserData) {
+        navigate('/');
+      }
+    }, []);
 
   const activeBuses = [
     { id: 'BUS001', route: 'Route 1', status: 'On Time', location: 'Ennore', capacity: '32/40' },
@@ -17,7 +24,7 @@ export default function HomeScreen() {
     <div style={styles.container}>
       <div style={styles.header}>
         <div style={styles.headerContent}>
-          <p style={styles.greeting}>Hello 10 Everyone!</p>
+          <p style={styles.greeting}>Hello Everyone!</p>
           <p style={styles.welcomeText}>Welcome to CIT Transport</p>
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
