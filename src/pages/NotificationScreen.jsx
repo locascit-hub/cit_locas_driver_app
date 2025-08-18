@@ -461,7 +461,7 @@ deleteButton: {
     position: 'relative',
   },
   unreadCard: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#c3ced5ff',
   },
   notificationContent: {
     display: 'block',
@@ -529,7 +529,7 @@ deleteButton: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: '#2563EB',
+    backgroundColor: '#184bb9ff',
   },
   emptyState: {
     flex: 1,

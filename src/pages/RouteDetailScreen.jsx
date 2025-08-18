@@ -19,9 +19,26 @@ export default function RouteDetailScreen() {
   const [loading, setLoading] = useState(true);
   const pollRef = useRef(null);
 
-  const busIcon = new L.Icon({
-    iconUrl: '/busicon.webp',
-    iconSize: [35, 35],
+const busDivIcon = (busNo) =>
+  L.divIcon({
+    html: `
+      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+        <img src="/bus-icon.webp" style="width:45px; height:45px;" />
+        <span style="
+          position: absolute;
+          bottom: 15px;
+          left: 18%;
+          color: white;
+          font-weight: bold;
+          font-size: 14px;
+          text-shadow: 1px 1px 2px black;
+        ">
+          ${busNo}
+        </span>
+      </div>
+    `,
+    className: "", // prevent Leaflet default styles
+    iconSize: [50, 50],
     iconAnchor: [20, 40],
     popupAnchor: [0, -40],
   });
@@ -67,13 +84,13 @@ export default function RouteDetailScreen() {
       </header>
 
       <div className="map-container">
-        <MapContainer center={[loc.latitude, loc.longitude]} zoom={15} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={[loc.latitude, loc.longitude]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
   <LayersControl.BaseLayer checked name="Street View">
-    <TileLayer
-      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      attribution="&copy; OpenStreetMap contributors"
-    />
+  <TileLayer
+  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+/>
   </LayersControl.BaseLayer>
 
   <LayersControl.BaseLayer name="Satellite View">
@@ -84,14 +101,14 @@ export default function RouteDetailScreen() {
     />
     <TileLayer
       url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-      attribution="Labels &copy; Esri"
+      attribution="© OpenStreetMap contributors"
     />
   </LayerGroup>
 </LayersControl.BaseLayer>
 </LayersControl>
 
 
-          <Marker position={[loc.latitude, loc.longitude]} icon={busIcon}>
+          <Marker position={[loc.latitude, loc.longitude]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
               <strong>Bus No:</strong> {clgNo || _id}<br />
               <strong>Last Updated:</strong> {new Date(loc.timestamp).toLocaleString()}

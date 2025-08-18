@@ -18,7 +18,7 @@ import NotificationScreen from './pages/NotificationScreen';
 import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
 
-const WS_URL = 'https://transport-3d8k.onrender.com'; // Keep WSS/HTTPS in production
+const WS_URL = 'http://localhost:8000'; // Keep WSS/HTTPS in production
 
 // Utility: Detect iOS Safari/Chrome (all use WebKit)
 const isIOS = () => {
