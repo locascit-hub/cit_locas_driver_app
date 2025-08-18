@@ -1,13 +1,20 @@
 // src/pages/SearchScreen.jsx
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiSearch, FiAlertTriangle, FiX, FiMapPin, FiUsers, FiUser, FiMap } from 'react-icons/fi';
+import getEndpoint from '../utils/loadbalancer';
 
 export default function SearchScreen() {
+    const navigate = useNavigate();
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('test');
+      if (!storedUserData) {
+        navigate('/');
+      }
+    }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const navigate = useNavigate();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -18,7 +25,7 @@ export default function SearchScreen() {
     setIsSearching(true);
     try {
       const resp = await fetch(
-        `${process.env.REACT_APP_BACKEND_URL}/api/buses?q=${encodeURIComponent(searchQuery)}`
+        `${getEndpoint()}/api/buses?q=${encodeURIComponent(searchQuery)}`
       );
       const data = await resp.json();
       setSearchResults(Array.isArray(data) ? data : []);

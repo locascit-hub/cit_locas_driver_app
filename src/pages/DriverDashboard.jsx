@@ -1,9 +1,18 @@
 import React, { useContext } from 'react';
 import { SocketContext } from '../App';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 export default function DriverDashboard({ driverId, busNo }) {
   const socket = useContext(SocketContext);
+   const navigate = useNavigate();
+
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('test');
+      if (!storedUserData) {
+        navigate('/');
+      }
+    }, []);
 
   const startBus = () => {
     socket.emit('busStarted', { driverId, busNo }, (response) => {

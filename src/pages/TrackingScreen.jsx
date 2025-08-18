@@ -1,9 +1,17 @@
-import React from 'react';
+import React,{useEffect} from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css'; // Ensure this is imported here or in a root file
+import { useNavigate } from 'react-router-dom';
 
 export default function TrackingScreen() {
   const position = [10.9647, 76.9616]; // [latitude, longitude]
+    const navigate = useNavigate();
+    useEffect(() => {
+      const storedUserData = localStorage.getItem('test');
+      if (!storedUserData) {
+        navigate('/');
+      }
+    }, []);
 
   return (
     <div style={styles.container}>
