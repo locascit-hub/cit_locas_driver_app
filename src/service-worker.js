@@ -97,6 +97,13 @@ self.addEventListener("push", (event) => {
       }
     })
   );
+
+    self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({ type: "NEW_NOTIFICATION" });
+    });
+  });
+
 });
 
 self.playNotificationSound = function() {

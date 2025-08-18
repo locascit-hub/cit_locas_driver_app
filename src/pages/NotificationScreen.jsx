@@ -10,7 +10,7 @@ import {
   FiTrash,
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { SocketContext, UserContext } from '../contexts';
+import { UserContext } from '../contexts'; // ⬅️ Removed SocketContext
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import getEndpoint from '../utils/loadbalancer';
@@ -29,26 +29,27 @@ const dbPromise = openDB(DB_NAME, 1, {
 const saveNotifications = async (notifs) => {
   const db = await dbPromise;
   const tx = db.transaction(STORE_NAME, 'readwrite');
-  notifs.forEach(notif => tx.store.put(notif));
+  notifs.forEach((notif) => tx.store.put(notif));
   await tx.done;
 };
 
 const getAllNotifications = async () => {
   const db = await dbPromise;
-  return await db.getAll(STORE_NAME);
+  const all=await db.getAll(STORE_NAME);
+  all.sort((a, b) => new Date(b.time) - new Date(a.time));
+  return all;
 };
 
 const getLatestNotificationTime = async () => {
   const db = await dbPromise;
   const all = await db.getAll(STORE_NAME);
   if (all.length === 0) return 0;
-  return Math.max(...all.map(n => new Date(n.time).getTime()));
+  return Math.max(...all.map((n) => new Date(n.time).getTime()));
 };
 
 // ---------- NotificationScreen ----------
 export default function NotificationScreen() {
   const { role } = useContext(UserContext);
-  const socket = useContext(SocketContext);
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([]);
@@ -61,24 +62,21 @@ export default function NotificationScreen() {
   useEffect(() => {
     const storedUserData = localStorage.getItem('test');
     if (!storedUserData) navigate('/');
-  }, []);
+  }, [navigate]);
 
   // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {
     try {
-      // 1️⃣ Load existing notifications from IndexedDB
       const storedNotifications = await getAllNotifications();
       setNotifications(storedNotifications);
 
-      // 2️⃣ Get latest message time
       const latestTime = await getLatestNotificationTime();
 
-      // 3️⃣ Fetch only new notifications
       const res = await fetch(`${getEndpoint()}/api/notifications?after=${latestTime}`);
       const newNotifs = await res.json();
 
       if (newNotifs.length > 0) {
-        setNotifications(prev => [...newNotifs, ...prev]);
+        setNotifications((prev) => [...newNotifs, ...prev]);
         await saveNotifications(newNotifs);
       }
     } catch (err) {
@@ -89,16 +87,18 @@ export default function NotificationScreen() {
   useEffect(() => {
     fetchNotifications();
 
-    // 4️⃣ WebSocket listener for real-time updates
-    socket.on('studentNotification', async (notif) => {
-      if (role === 'student' || role === 'driver') {
-        setNotifications(prev => [notif, ...prev]);
-        await saveNotifications([notif]);
-      }
-    });
-
-    return () => socket.off('studentNotification');
-  }, [socket, role]);
+    //  Listen for push events forwarded from service worker
+    if ('serviceWorker' in navigator) {
+      const handler = (event) => {
+        if (event.data?.type === 'NEW_NOTIFICATION') {
+          console.log('Push message received, refreshing notifications...');
+          fetchNotifications();
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, []);
 
   // ---------- Delete Notification ----------
   const handleDelete = async (id) => {
@@ -111,7 +111,7 @@ export default function NotificationScreen() {
       });
       const data = await res.json();
       if (data.success) {
-        setNotifications(prev => prev.filter(n => n._id !== id));
+        setNotifications((prev) => prev.filter((n) => n._id !== id));
         alert('Deleted successfully');
       } else {
         throw new Error(data.error || 'Delete failed');
@@ -159,19 +159,27 @@ export default function NotificationScreen() {
   // ---------- Helpers ----------
   const getNotificationIcon = (type) => {
     switch (type) {
-      case 'warning': return <FiAlertTriangle size={20} color="#F59E0B" />;
-      case 'alert': return <FiAlertCircle size={20} color="#EF4444" />;
-      case 'success': return <FiCheckCircle size={20} color="#10B981" />;
-      default: return <FiInfo size={20} color="#3B82F6" />;
+      case 'warning':
+        return <FiAlertTriangle size={20} color="#F59E0B" />;
+      case 'alert':
+        return <FiAlertCircle size={20} color="#EF4444" />;
+      case 'success':
+        return <FiCheckCircle size={20} color="#10B981" />;
+      default:
+        return <FiInfo size={20} color="#3B82F6" />;
     }
   };
 
   const getNotificationBorder = (type) => {
     switch (type) {
-      case 'warning': return '#F59E0B';
-      case 'alert': return '#EF4444';
-      case 'success': return '#10B981';
-      default: return '#3B82F6';
+      case 'warning':
+        return '#F59E0B';
+      case 'alert':
+        return '#EF4444';
+      case 'success':
+        return '#10B981';
+      default:
+        return '#3B82F6';
     }
   };
 
@@ -184,7 +192,9 @@ export default function NotificationScreen() {
           <p style={styles.title}>Notifications</p>
           {notifications.filter(n => !n.read).length > 0 && (
             <div style={styles.unreadBadge}>
-              <p style={styles.unreadCount}>{notifications.filter(n => !n.read).length}</p>
+              <p style={styles.unreadCount}>
+                {notifications.filter(n => !n.read).length}
+                </p>
             </div>
           )}
         </div>
@@ -276,7 +286,7 @@ export default function NotificationScreen() {
                   style={styles.notificationImage}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setLightboxImages([{ src: `${process.env.REACT_APP_BACKEND_URL}${notification.imageUrl}` }]);
+                    setLightboxImages([{ src: `${notification.imageUrl}` }]);
                     setLightboxOpen(true);
                   }}
                 />
@@ -453,6 +463,7 @@ deleteButton: {
   notificationsList: {
     flex: 1,
     padding: 20,
+    paddingBottom: 80,
     overflowY: 'auto',
   },
   notificationCard: {
@@ -464,7 +475,7 @@ deleteButton: {
     position: 'relative',
   },
   unreadCard: {
-    backgroundColor: '#c3ced5ff',
+    backgroundColor: '#F0F9FF',
   },
   notificationContent: {
     display: 'block',
@@ -532,7 +543,7 @@ deleteButton: {
     width: 8,
     height: 8,
     borderRadius: '50%',
-    backgroundColor: '#184bb9ff',
+    backgroundColor: '#2563EB',
   },
   emptyState: {
     flex: 1,
