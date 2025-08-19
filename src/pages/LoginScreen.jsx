@@ -77,7 +77,7 @@ export default function LoginScreen() {
       if(!otpPage) {
       // For student login, we can use the email as the identifier
       //generate otp in server and send it to email
-      const response = await fetch(`${getEndpoint('helper')}/api/auth/student/login`, {
+      const response = await fetch(`${getEndpoint('helpers')}/api/auth/student/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim() })
