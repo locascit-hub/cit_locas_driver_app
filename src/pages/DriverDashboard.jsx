@@ -1,10 +1,8 @@
 import React, { useContext } from 'react';
-import { SocketContext } from '../App';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
 export default function DriverDashboard({ driverId, busNo }) {
-  const socket = useContext(SocketContext);
    const navigate = useNavigate();
 
     useEffect(() => {
@@ -13,16 +11,6 @@ export default function DriverDashboard({ driverId, busNo }) {
         navigate('/');
       }
     }, []);
-
-  const startBus = () => {
-    socket.emit('busStarted', { driverId, busNo }, (response) => {
-      if (response.success) {
-        toast.success(`Bus ${busNo} started.`);
-      } else {
-        toast.error('Could not start bus.');
-      }
-    });
-  };
 
   return (
     <div style={styles.container}>

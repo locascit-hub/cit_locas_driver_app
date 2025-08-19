@@ -1,11 +1,9 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import decryptJWT from './utils/decrypt';
 
-import { SocketContext, UserContext } from './contexts';
 import NavBar from './components/NavBar';
 
 // Pages
@@ -18,6 +16,7 @@ import TrackingScreen from './pages/TrackingScreen';
 import NotificationScreen from './pages/NotificationScreen';
 import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
+import { UserContext } from './contexts';
 
 const WS_URL = 'http://localhost:8000'; // Keep WSS/HTTPS in production
 
@@ -59,8 +58,6 @@ export default function App() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [userData, setUserData] = useState(null);
 
-  // WebSocket init
-  const socket = useMemo(() => io(WS_URL, { transports: ['websocket'] }), []);
 
 useEffect(async () => {
   const token = localStorage.getItem('test');
@@ -70,9 +67,6 @@ useEffect(async () => {
   }
 }, []);
 
-  useEffect(() => {
-    return () => socket.disconnect();
-  }, [socket]);
 
   // Notification permission handling
   useEffect(() => {
@@ -89,9 +83,7 @@ useEffect(async () => {
     } else {
       console.log('Notifications not supported on this device/browser.');
     }
-
-    return () => socket.close();
-  }, [socket]);
+  }, []);
 
   // Install prompt handler
   useEffect(() => {
@@ -114,13 +106,11 @@ useEffect(async () => {
   };
 
   return (
-    <SocketContext.Provider value={socket}>
       <UserContext.Provider value={{ role, setRole }}>
         <Router>
           <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} userData={userData} />
         </Router>
         <ToastContainer position="top-right" autoClose={3000} />
       </UserContext.Provider>
-    </SocketContext.Provider>
   );
 }

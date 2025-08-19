@@ -1,7 +1,7 @@
 import React, { useState, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTruck, FiSmartphone, FiMail, FiLock } from 'react-icons/fi';
-import { UserContext ,SocketContext} from '../contexts';
+import { UserContext} from '../contexts';
 import getEndpoint from '../utils/loadbalancer';
  
 
@@ -14,7 +14,6 @@ export default function LoginScreen() {
   const [otpPage, setOtpPage] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setRole } = useContext(UserContext);
-  const socket = useContext(SocketContext);
 
 
   const [otp, setOtp] = useState('');
@@ -105,7 +104,6 @@ export default function LoginScreen() {
           throw new Error('Invalid OTP or email');
         }
       
-        socket.emit('registerStudent', data.studentId);
 
       await subscribeUserToPush(email.trim());
       localStorage.setItem('test',data.token);

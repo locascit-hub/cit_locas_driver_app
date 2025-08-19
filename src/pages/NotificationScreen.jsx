@@ -10,7 +10,7 @@ import {
   FiTrash,
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../contexts'; // ⬅️ Removed SocketContext
+import { UserContext } from '../contexts';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import getEndpoint from '../utils/loadbalancer';

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import getEndpoint from './utils/loadbalancer';
 
-const WS_URL = process.env.REACT_APP_BACKEND_URL;
-const BACKEND_SUBSCRIBE_URL = `${process.env.REACT_APP_BACKEND_URL}/subscribe`;
 const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
 
 
@@ -9,8 +8,6 @@ function App() {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
-    // Connect WebSocket
-    const socket = new WebSocket(WS_URL);
 
     socket.onmessage = (event) => {
       setMessages((prev) => [...prev, event.data]);
@@ -85,8 +82,8 @@ const [deferredPrompt, setDeferredPrompt] = useState(null);
         });
         
         console.log("Subscription created successfully:", subscription);
-        
-        const response = await fetch(BACKEND_SUBSCRIBE_URL, {
+
+        const response = await fetch(`${getEndpoint()}/subscribe`, {
           method: "POST",
           body: JSON.stringify(subscription), // THIS IS THE CRUCIAL LINE
           headers: { "Content-Type": "application/json" },
