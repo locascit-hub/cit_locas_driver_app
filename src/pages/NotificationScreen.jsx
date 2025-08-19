@@ -57,6 +57,7 @@ export default function NotificationScreen() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   // Redirect if no user data
   useEffect(() => {
@@ -139,7 +140,8 @@ export default function NotificationScreen() {
     formData.append('type', 'info');
     formData.append('targetStudentIds', 'all');
     if (selectedImage) formData.append('image', selectedImage);
-
+    //loading
+    setLoading(true);
     try {
       const res = await fetch(`${getEndpoint()}/api/notifications`, {
         method: 'POST',
@@ -153,6 +155,8 @@ export default function NotificationScreen() {
       }
     } catch (error) {
       alert('Error sending notification');
+    }finally{
+      setLoading(false);
     }
   };
 
