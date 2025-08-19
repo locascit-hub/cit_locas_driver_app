@@ -127,6 +127,7 @@ export default function LoginScreen() {
         alert('Please enter email and password');
         return;
       }
+      setLoading(true);
 
       try {
         const response = await fetch(`${getEndpoint()}/api/incharge/login`, {
@@ -146,6 +147,8 @@ export default function LoginScreen() {
         navigate('/home', { replace: true, state: { role: 'incharge', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);
+      }finally {
+        setLoading(false);
       }
     }
   };
