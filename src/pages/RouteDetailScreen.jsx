@@ -65,9 +65,9 @@ const busDivIcon = (busNo) =>
       }
       const data = await res.json();
       setLoc({
-        latitude: data.latitude,
-        longitude: data.longitude,
-        timestamp: data.timestamp,
+        lat: data.lat,
+        long: data.long,
+        last: data.last,
       });
     } catch (e) {
       console.error('Fetch error', e);
@@ -79,9 +79,7 @@ const busDivIcon = (busNo) =>
 
   useEffect(() => {
     fetchLocation();
-    pollRef.current = setInterval(fetchLocation, 10000);
-    return () => clearInterval(pollRef.current);
-  }, [_id]);
+  }, []);
 
   if (loading) return <div className="centered">Loading...</div>;
   if (!loc) return <div className="centered">Live location not available yet.</div>;
@@ -93,7 +91,7 @@ const busDivIcon = (busNo) =>
       </header>
 
       <div className="map-container">
-        <MapContainer center={[loc.latitude, loc.longitude]} zoom={20} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={[loc.lat, loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
   <LayersControl.BaseLayer checked name="Street View">
   <TileLayer
@@ -117,17 +115,17 @@ const busDivIcon = (busNo) =>
 </LayersControl>
 
 
-          <Marker position={[loc.latitude, loc.longitude]} icon={busDivIcon(clgNo || _id)}>
+          <Marker position={[loc.lat, loc.long]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
               <strong>Bus No:</strong> {clgNo || _id}<br />
-              <strong>Last Updated:</strong> {new Date(loc.timestamp).toLocaleString()}
+              <strong>Last Updated:</strong> {new Date(loc.last).toLocaleString()}
             </Popup>
           </Marker>
         </MapContainer>
       </div>
 
       <div className="status-bar">
-        Last updated: <strong>{new Date(loc.timestamp).toLocaleTimeString()}</strong>
+        Last updated: <strong>{new Date(loc.last).toLocaleTimeString()}</strong>
       </div>
     </div>
   );
