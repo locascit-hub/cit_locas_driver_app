@@ -44,6 +44,7 @@ export default function SearchScreen() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
+        
         <h1 style={styles.title}>Search Buses</h1>
         <p style={styles.subtitle}>Find bus routes and schedules</p>
       </div>
@@ -54,7 +55,7 @@ export default function SearchScreen() {
           <input
             style={styles.searchInput}
             type="text"
-            placeholder="Enter a Bus Number (e.g., BUS001)"
+            placeholder="Enter a Bus Number (e.g., 20)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -96,22 +97,17 @@ export default function SearchScreen() {
                     <h3 style={styles.busId}>{bus.regnNumber}</h3>
                     <p style={styles.busRoute}>{bus.route}</p>
                   </div>
-                  <div
-                    style={{
-                      ...styles.statusBadge,
-                      ...(bus.status === 'On Time' ? styles.statusOnTime : styles.statusDelayed),
-                    }}
-                  >
-                    <span
-                      style={
-                        bus.status === 'On Time'
-                          ? { ...styles.statusText, ...styles.statusTextOnTime }
-                          : { ...styles.statusText, ...styles.statusTextDelayed }
-                      }
-                    >
-                      {bus.status ?? 'On Time'}
-                    </span>
-                  </div>
+                  <button
+                  style={styles.trackButton}
+                  onClick={() =>
+                    navigate('/route-detail', {
+                      state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
+                    })
+                  }
+                >
+                  <FiMap size={16} color="#FFFFFF" />
+                  <span style={styles.trackButtonText}>Track Live</span>
+                </button>
                 </div>
 
                 <div style={styles.busDetails}>
@@ -165,17 +161,7 @@ export default function SearchScreen() {
                   </div>
                 </div>
 
-                <button
-                  style={styles.trackButton}
-                  onClick={() =>
-                    navigate('/route-detail', {
-                      state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
-                    })
-                  }
-                >
-                  <FiMap size={16} color="#FFFFFF" />
-                  <span style={styles.trackButtonText}>Track Live</span>
-                </button>
+                
               </div>
             ))}
           </>
@@ -211,6 +197,7 @@ const styles = {
     overflowY: 'auto',
     paddingBottom: 30,
   },
+
   header: {
     backgroundColor: '#FFFFFF',
     paddingTop: 20,
@@ -224,12 +211,18 @@ const styles = {
     color: '#1F2937',
     margin: 0,
     marginBottom: 4,
+    alignSelf: 'center',
+    textAlign: 'left',
+    marginTop: 8,
   },
   subtitle: {
     fontSize: 16,
     fontWeight: 400,
     color: '#6B7280',
     margin: 0,
+    alignSelf: 'center',
+    textAlign: 'left',
+    marginTop: 10,
   },
   searchContainer: { padding: 20, backgroundColor: '#FFFFFF' },
   searchInputContainer: {

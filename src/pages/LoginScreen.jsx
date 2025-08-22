@@ -1,6 +1,6 @@
 import React, { useState, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTruck, FiSmartphone, FiMail, FiLock } from 'react-icons/fi';
+import { FiTruck, FiSmartphone, FiMail, FiLock, FiArrowLeft } from 'react-icons/fi';
 import { UserContext} from '../contexts';
 import getEndpoint from '../utils/loadbalancer';
  
@@ -155,6 +155,10 @@ export default function LoginScreen() {
 
   return (
     <div style={styles.container}>
+      { /* Back Button */}
+      <div style={styles.backButton} onClick={() => navigate('/')}>
+        <FiArrowLeft size={24} color="#FFFFFF" />
+      </div>
       <div style={styles.content}>
         <div style={styles.header}>
           <FiTruck size={40} color="#FFFFFF" />
@@ -236,9 +240,17 @@ export default function LoginScreen() {
               />
             </div>
           )}
-
+          {otpPage && userType === 'student' && (
+        <div style={styles.backButton} onClick={() => navigate('/login')}>
+          <FiArrowLeft size={24} color="#FFFFFF" />
+         
+        </div>
+      )}
           {/* OTP input for student login */}
           {otpPage && (
+            //back button on top left corner
+           
+            
             <div style={styles.inputContainer}>
               <FiLock size={20} color="#64748B" />
               <input
@@ -249,6 +261,8 @@ export default function LoginScreen() {
                 onChange={(e) => setOtp(e.target.value)}
               />
             </div>
+           
+            
           )}
           
             <button style={{ 
@@ -282,6 +296,17 @@ const styles = {
     flexDirection: 'column',
     justifyContent: 'center',
     padding: 20,
+  },
+   backButton: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    padding: '6px 12px',
+    borderRadius: 8,
   },
   header: {
     display: 'flex',
