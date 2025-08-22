@@ -9,7 +9,7 @@ import {
   LayerGroup,
   useMap,
 } from "react-leaflet";
-import { FiArrowLeft, FiRefreshCcw } from "react-icons/fi";
+import { FiArrowLeft, FiRefreshCcw ,FiRefreshCw} from "react-icons/fi";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles/routedetailscreen.css";
@@ -29,10 +29,12 @@ export default function RouteDetailScreen() {
   const [loc, setLoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reloadTimer, setReloadTimer] = useState(90); 
+  const [remtimer, setRemtimer] = useState(0);
 
   useEffect(() => {
     const storedUserData = localStorage.getItem("test");
     if (!storedUserData) navigate("/");
+    fetchLocation();
   }, []);
 
   const busDivIcon = (busNo) =>
@@ -71,11 +73,7 @@ export default function RouteDetailScreen() {
         throw new Error(`Server returned ${res.status}`);
       }
       const data = await res.json();
-      setLoc({
-        lat: data.lat,
-        long: data.long,
-        last: data.last,
-      });
+      setLoc(data);
     } catch (e) {
       console.error("Fetch error", e);
       window.alert("Could not fetch live location.");
@@ -84,9 +82,30 @@ export default function RouteDetailScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchLocation();
-  }, []);
+useEffect(() => {
+
+const interval = setInterval(() => {
+  if (!loc?.last) return; // wait until loc is available
+
+  if (loc.i === -1 || !loc.i) {
+    setRemtimer("Stopped");
+    return;
+  }
+
+  const lastTime = new Date(loc.last).getTime(); // in ms
+  const nextFetchTime = lastTime + loc.i * 60000 + 3000;
+  const now = Date.now();
+
+  const diff = nextFetchTime - now;
+  console.log(diff)
+    // show at least 1 second
+  setRemtimer(Math.max(0, Math.ceil(diff / 1000)));
+}, 1000);
+
+
+  return () => clearInterval(interval); // cleanup on unmount
+}, [loc]); // ✅ run only once on mount
+
 
   if (loading)
     return <div style={styles.centered}>Loading live location...</div>;
@@ -104,30 +123,33 @@ export default function RouteDetailScreen() {
 
   // Custom Reload Button placed inside map
   function ReloadControl({ onReload }) {
-    const map = useMap();
     return (
       <div
         style={{
-          position: "absolute",
-          top: "480px",
-          right: "10px",
+          height:"fit-content",
+          marginBottom: "10px",
           zIndex: 1000,
+          width:"100%",
+          backgroundColor: "#fff9db",
+          padding: "0.5rem",
+          display:"flex",
+          flexDirection:"row"
         }}
       >
-        <button
-          style={styles.reloadBtn}
-          onClick={() => {
-            if (diffMinutes > 3) {
-              fetchLocation();
-              window.alert("Location reloaded successfully.");
-            } else {
-              window.alert("Location is up to date (within 3 minutes).");
-            }
-          }}
-        >
-          {/*position: "bottomleft"*/}
-          <FiRefreshCcw size={16} style={{ marginRight: 6 }} /> Reload
+      <div>
+      <div style={{...styles.statusBar,fontSize: "15px",padding: "0.2rem 0.5rem"}}>
+        Last updated: <strong>{new Date(loc.last).toLocaleString()}</strong>
+      </div>
+      <div style={{...styles.statusBar,fontSize: "14px",padding: "0rem 0.5rem"}}>
+        Reload enables in <strong>{remtimer} secs</strong>
+      </div>
+      </div>
+      <div style={{textAlign:"center",flex:1}}>
+        <button disabled={remtimer!=0} style={{color:(remtimer!=0 || remtimer!="stopped")?"#2563EB":"green", cursor: "pointer",background:"transparent"}} onClick={onReload}>
+          <strong><FiRefreshCcw size={26} fontFamily="Segoe UI" /></strong>
         </button>
+      </div>
+
       </div>
     );
   }
@@ -135,16 +157,18 @@ export default function RouteDetailScreen() {
   return (
     <div style={styles.container}>
       {/* Back Button */}
+      <div style={{display:"flex",flexDirection:"row",justifyContent:"flex-start",alignItems:"center",width:"100%",marginBottom:"2px"}}>
       <button style={styles.backButton} onClick={() => navigate("/search")}>
         <FiArrowLeft size={20} />
       </button>
+      <div style={{width:"70%",textAlign:"center",height:"100%",...styles.title}}>
+        <span>Bus No: {clgNo || _id}</span>
+      </div>
+      </div>
+      <ReloadControl onReload={fetchLocation} />
 
       {/* Header */}
-      <div style={styles.header}>
-        <h2 style={styles.title}> Bus No: {clgNo || _id}</h2>
-      </div>
-
-      <div className="map-container">
+      <div style={{height:"75%"}}>
         <MapContainer center={[loc.lat, loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Street View">
@@ -181,26 +205,28 @@ export default function RouteDetailScreen() {
           </Marker>
 
           {/* Reload Button inside Map */}
-          <ReloadControl onReload={fetchLocation} />
-        </MapContainer>
-      </div>
 
-      <div className="status-bar">
-        Last updated: <strong>{new Date(loc.last).toLocaleTimeString()}</strong>
+        </MapContainer>
       </div>
     </div>
   );
 }
 
 const styles = {
+
+  statusBar: {
+    textAlign: "left",
+    color: "#444",
+  },
   container: {
     fontFamily: "Segoe UI, sans-serif",
     display: "flex",
     flexDirection: "column",
     height: "100vh",
     background: "#f5f7f9ff",
-    padding: "1rem",
+    padding: "0.5rem",
   },
+
   backButton: {
     alignSelf: "flex-start",
     display: "flex",
@@ -225,7 +251,7 @@ const styles = {
   },
   title: {
     margin: 0,
-    fontSize: "20px",
+    fontSize: "22px",
     fontWeight: "600",
     color: "#1E40AF",
   },
@@ -240,17 +266,6 @@ const styles = {
   map: {
     width: "100%",
     height: "100%",
-  },
-  statusBar: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "white",
-    padding: "10px 16px",
-    borderRadius: "12px",
-    boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-    fontSize: "14px",
-    color: "#6c6b6bff",
   },
   reloadBtn: {
     display: "flex",
