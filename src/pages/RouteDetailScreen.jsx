@@ -88,20 +88,6 @@ export default function RouteDetailScreen() {
     fetchLocation();
   }, []);
 
-   useEffect(() => {
-    const interval = setInterval(() => {
-      setReloadTimer((prev) => {
-        if (prev <= 1) {
-          fetchLocation();
-          return 90; // reset countdown
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   if (loading)
     return <div style={styles.centered}>Loading live location...</div>;
   if (!loc)
@@ -158,13 +144,8 @@ export default function RouteDetailScreen() {
         <h2 style={styles.title}> Bus No: {clgNo || _id}</h2>
       </div>
 
-      {/* Map */}
-      <div style={styles.mapWrapper}>
-        <MapContainer
-          center={[loc.lat, loc.long]}
-          zoom={17}
-          style={styles.map}
-        >
+      <div className="map-container">
+        <MapContainer center={[loc.lat, loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Street View">
               <TileLayer
@@ -187,12 +168,15 @@ export default function RouteDetailScreen() {
             </LayersControl.BaseLayer>
           </LayersControl>
 
+
           <Marker position={[loc.lat, loc.long]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
-              <strong>Bus No:</strong> {clgNo || _id}
-              <br />
-              <strong>Last Updated:</strong>{" "}
-              {new Date(loc.last).toLocaleString()}
+              <strong>Bus No:</strong> {clgNo || _id}<br />
+              <strong>Last Updated:</strong> {new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata", // change if needed
+  }).format(new Date(loc.last))}
             </Popup>
           </Marker>
 
@@ -201,9 +185,8 @@ export default function RouteDetailScreen() {
         </MapContainer>
       </div>
 
-      {/* Status Bar */}
-      <div style={styles.statusBar}>
-        <span style={styles.freshness}>{freshness}</span>
+      <div className="status-bar">
+        Last updated: <strong>{new Date(loc.last).toLocaleTimeString()}</strong>
       </div>
     </div>
   );
