@@ -118,7 +118,11 @@ const busDivIcon = (busNo) =>
           <Marker position={[loc.lat, loc.long]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
               <strong>Bus No:</strong> {clgNo || _id}<br />
-              <strong>Last Updated:</strong> {new Date(loc.last).toLocaleString()}
+              <strong>Last Updated:</strong> {new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata", // change if needed
+  }).format(new Date(loc.last))}
             </Popup>
           </Marker>
         </MapContainer>

@@ -45,6 +45,7 @@ function AppShell({ installPrompt, handleInstallClick,userData }) {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/profile" element={<ProfileScreen userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
+        <Route path='/wel' element={<WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}
@@ -84,6 +85,21 @@ useEffect(async () => {
       console.log('Notifications not supported on this device/browser.');
     }
   }, []);
+
+
+
+  useEffect(() => {
+  const handleAppInstalled = () => {
+    alert("App installed successfully! Now you can see the app in your menu.");
+  };
+
+  window.addEventListener("appinstalled", handleAppInstalled);
+
+  return () => {
+    window.removeEventListener("appinstalled", handleAppInstalled);
+  };
+}, []);
+
 
   // Install prompt handler
   useEffect(() => {
