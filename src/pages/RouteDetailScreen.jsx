@@ -37,6 +37,7 @@ export default function RouteDetailScreen() {
 
  useEffect(() => {
     if (!token) navigate("/");
+    fetchLocation();
   }, [token, navigate]);
 
   const busDivIcon = (busNo) =>
