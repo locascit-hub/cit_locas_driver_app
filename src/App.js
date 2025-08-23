@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState,useContext  } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,7 +16,7 @@ import TrackingScreen from './pages/TrackingScreen';
 import NotificationScreen from './pages/NotificationScreen';
 import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
-import { UserContext } from './contexts';
+import { UserProvider, UserContext } from './contexts'; // import context
 
 const WS_URL = 'http://localhost:8000'; // Keep WSS/HTTPS in production
 
@@ -26,17 +26,20 @@ const isIOS = () => {
 };
 
 // Root wrapper
-function AppShell({ installPrompt, handleInstallClick,userData }) {
+function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
   const hideNavOn = ['/', '/login', '/register'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
-
-  const isLoggedIn = !!localStorage.getItem('test');
+  const { token, userData } = useContext(UserContext);
+   const isLoggedIn = !!token;
 
   return (
     <>
+    
       <Routes>
+        
         <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
+        
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />
@@ -49,6 +52,7 @@ function AppShell({ installPrompt, handleInstallClick,userData }) {
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}
+    
     </>
   );
 }
@@ -57,16 +61,9 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [role, setRole] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
-  const [userData, setUserData] = useState(null);
+  
 
 
-useEffect(async () => {
-  const token = localStorage.getItem('test');
-  if(token) {
-    const userData = await decryptJWT(token);
-    setUserData(userData);
-  }
-}, []);
 
 
   // Notification permission handling
@@ -122,11 +119,11 @@ useEffect(async () => {
   };
 
   return (
-      <UserContext.Provider value={{ role, setRole }}>
+        <UserProvider>
         <Router>
-          <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick} userData={userData} />
+          <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick}  />
         </Router>
         <ToastContainer position="top-right" autoClose={3000} />
-      </UserContext.Provider>
+      </UserProvider>
   );
 }

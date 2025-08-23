@@ -1,39 +1,41 @@
-import React, { useEffect, useContext,useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell } from 'react-icons/fi';
 
-import '../styles/homescreen.css';
-import { UserContext } from '../contexts';
+
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FiTruck, FiUsers, FiMapPin, FiSearch, FiBell } from "react-icons/fi";
+import "../styles/homescreen.css";
 import { getRecentBuses } from '../utils/recentBuses';
-
 
 export default function HomeScreen() {
   const navigate = useNavigate();
-  const { token } = useContext(UserContext);
   const [recent, setRecent] = useState([]);
+
+  // refs for scrollers
   const recentRef = useRef(null);
 
   useEffect(() => {
-    if (!token) {
-      navigate('/', { replace: true });
+    const storedUserData = localStorage.getItem("test");
+    if (!storedUserData) {
+      navigate("/");
+      return;
     }
 
+    // load recent searches
     setRecent(getRecentBuses());
-    
-        // listen to storage changes from other tabs/windows
-        const onStorage = (e) => {
-          if (e.key === 'recentBuses') setRecent(getRecentBuses());
-        };
-        window.addEventListener('storage', onStorage);
-    
-        return () => {
-          window.removeEventListener('storage', onStorage);
-        };
-  }, [token, navigate]);
 
-    
-  
+    // listen to storage changes from other tabs/windows
+    const onStorage = (e) => {
+      if (e.key === 'recentBuses') setRecent(getRecentBuses());
+    };
+    window.addEventListener('storage', onStorage);
 
+    return () => {
+      window.removeEventListener('storage', onStorage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // pointer/touch drag handlers
   useEffect(() => {
     function setupDrag(scroller) {
       if (!scroller) return () => {};
@@ -114,18 +116,18 @@ export default function HomeScreen() {
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
               <FiTruck size={24} color="#FFFFFF" />
-              <p style={styles.statNumber}>101</p>
+              <p style={styles.statNumber}>91</p>
               <p style={styles.statLabel}>Active Buses</p>
             </div>
             <div style={styles.statItem}>
               <FiUsers size={24} color="#FFFFFF" />
-              <p style={styles.statNumber}>4500</p>
+              <p style={styles.statNumber}>4000</p>
               <p style={styles.statLabel}>Students</p>
             </div>
             <div style={styles.statItem}>
               <FiMapPin size={24} color="#cfababff" />
               <p style={styles.statNumber}>65</p>
-              <p style={styles.statLabel}>Routes</p>
+              <p style={styles.statLabel}>Numbered</p>
             </div>
           </div>
         </div>
@@ -141,20 +143,18 @@ export default function HomeScreen() {
             <div ref={recentRef} style={{ ...styles.busRowScrollerSingle, marginBottom: 12 }}>
               <div style={styles.busRowInnerSingle}>
                 {recent.map((bus) => {
-                  const id = bus.regnNumber || bus.route || bus.obu_id || bus.vi || 'UNKNOWN';
+                  const id = bus.vi || bus.regnNumber || bus._id || bus.obu_id || 'UNKNOWN';
                   const location = getLocationFromBus(bus);
                   return (
                     <div 
                       key={id} 
                       style={{ ...styles.busCardHorizontal, minWidth: 180 }} 
-                      onClick={() => navigate('/route-detail', {
-    state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
-  })}
+                      onClick={() => navigate('/route-detail', { state: { userType: 'student', _id: bus.vi || bus.obu_id || bus._id, clgNo: bus.clgNo } })}
                     >
                       <div>
                         <h4 style={{ margin: 0, fontSize: 14 }}>{id}</h4>
                         <p style={{ margin: '4px 0', color: '#6B7280' }}>{bus.route || 'Route'}</p>
-                        <p style={{ margin: '4px 0', color: '#374151', fontWeight: 600 }}>BUS NO: {bus.clgNo ?? '—'}</p>
+                        <p style={{ margin: '4px 0', color: '#374151', fontWeight: 600 }}>CLG: {bus.clgNo ?? '—'}</p>
                       </div>
                       <div style={{ marginTop: 8 }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

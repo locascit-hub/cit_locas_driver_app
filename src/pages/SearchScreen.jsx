@@ -1,17 +1,30 @@
 // src/pages/SearchScreen.jsx
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiSearch, FiAlertTriangle, FiX, FiMapPin, FiUsers, FiUser, FiMap } from 'react-icons/fi';
+import {
+  FiSearch,
+  FiAlertTriangle,
+  FiX,
+  FiMapPin,
+  FiUsers,
+  FiUser,
+  FiMap
+} from 'react-icons/fi';
 import getEndpoint from '../utils/loadbalancer';
+import { UserContext } from '../contexts';
+import { addRecentBus } from '../utils/recentBuses';
 
 export default function SearchScreen() {
-    const navigate = useNavigate();
-    useEffect(() => {
-      const storedUserData = localStorage.getItem('test');
-      if (!storedUserData) {
-        navigate('/');
-      }
-    }, []);
+  const navigate = useNavigate();
+  const { token, role } = useContext(UserContext); // use context for auth & role
+
+  // redirect to root when not authenticated
+  useEffect(() => {
+    if (!token) {
+      navigate('/', { replace: true });
+    }
+  }, [token, navigate]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -25,12 +38,34 @@ export default function SearchScreen() {
     setIsSearching(true);
     try {
       const resp = await fetch(
-        `${getEndpoint()}/api/buses?q=${encodeURIComponent(searchQuery)}`
+        `${getEndpoint()}/api/buses?q=${encodeURIComponent(searchQuery)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}), 
+          },
+        }
       );
+
+      if(resp.status === 404) {
+      window.location.reload();
+      return;
+      }
+
+      if (!resp.ok) {
+        // try to read message if available
+        let errText = `Server responded with ${resp.status}`;
+        try {
+          const errBody = await resp.json();
+          if (errBody && errBody.error) errText = errBody.error;
+        } catch (_) {}
+        throw new Error(errText);
+      }
       const data = await resp.json();
       setSearchResults(Array.isArray(data) ? data : []);
     } catch (e) {
       alert(`Network error: ${e.message}`);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -39,6 +74,18 @@ export default function SearchScreen() {
   const clearSearch = () => {
     setSearchQuery('');
     setSearchResults([]);
+  };
+  const handleViewBus = (bus) => {
+  // Save to Recently Viewed (MRU, dedup, capped at 3)
+  addRecentBus(bus);
+
+  // Navigate as you already do
+  navigate('/route-detail', {
+    state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
+  });
+};
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter') handleSearch();
   };
 
   return (
@@ -100,9 +147,7 @@ export default function SearchScreen() {
                   <button
                   style={styles.trackButton}
                   onClick={() =>
-                    navigate('/route-detail', {
-                      state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
-                    })
+                   handleViewBus(bus)
                   }
                 >
                   <FiMap size={16} color="#FFFFFF" />

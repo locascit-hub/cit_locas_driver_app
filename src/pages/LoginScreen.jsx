@@ -2,6 +2,7 @@ import React, { useState, useContext} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiTruck, FiSmartphone, FiMail, FiLock, FiArrowLeft } from 'react-icons/fi';
 import { UserContext} from '../contexts';
+import decryptJWT from '../utils/decrypt';
 import getEndpoint from '../utils/loadbalancer';
  
 
@@ -13,7 +14,7 @@ export default function LoginScreen() {
   const [userType, setUserType] = useState('student');
   const [otpPage, setOtpPage] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { setRole } = useContext(UserContext);
+  const { setRole, setToken, setUserData,setSno,token } = useContext(UserContext);
 
 
   const [otp, setOtp] = useState('');
@@ -44,7 +45,7 @@ export default function LoginScreen() {
         const response = await fetch(`${getEndpoint()}/subscribe`, {
           method: "POST",
           body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), },
         });
         
         if (response.ok) {
@@ -103,11 +104,17 @@ export default function LoginScreen() {
         if (!response.ok) {
           throw new Error('Invalid OTP or email');
         }
-      
+      setToken(data.token);
+      setSno(data.sno);
+        try {
+            const decoded = await decryptJWT(data.token);
+            setUserData(decoded); // ok even if provider will do it again
+          } catch (err) {
+            console.warn('decode failed', err);
+          }
 
       await subscribeUserToPush(email.trim());
-      localStorage.setItem('test',data.token);
-      localStorage.setItem('sno',data.sno);
+     
       console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
@@ -142,8 +149,14 @@ export default function LoginScreen() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Login failed');
         setRole('incharge');
+        setToken(data.token);
 
-      localStorage.setItem('test',data.token);
+       try {
+  const decoded = await decryptJWT(data.token);
+  setUserData(decoded); // optional: provider will decode, but this gives immediate UI
+} catch (err) {
+  console.warn('Immediate decode failed:', err);
+}
         navigate('/home', { replace: true, state: { role: 'incharge', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);

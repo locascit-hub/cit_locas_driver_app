@@ -14,6 +14,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "../styles/routedetailscreen.css";
 import getEndpoint from "../utils/loadbalancer";
+import { useContext } from "react";
+import { UserContext } from "../contexts";
+
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -29,11 +32,11 @@ export default function RouteDetailScreen() {
   const [loc, setLoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [reloadTimer, setReloadTimer] = useState(90); 
+  const { token } = useContext(UserContext); 
 
-  useEffect(() => {
-    const storedUserData = localStorage.getItem("test");
-    if (!storedUserData) navigate("/");
-  }, []);
+ useEffect(() => {
+    if (!token) navigate("/");
+  }, [token, navigate]);
 
   const busDivIcon = (busNo) =>
     L.divIcon({
@@ -61,13 +64,18 @@ export default function RouteDetailScreen() {
 
   const fetchLocation = async () => {
     try {
-      const res = await fetch(`${getEndpoint()}/get-location/obu/${_id}`);
+      const res = await fetch(`${getEndpoint()}/get-location/obu/${_id}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        });
       if (!res.ok) {
-        if (res.status === 404) {
-          setLoc(null);
-          setLoading(false);
-          return;
-        }
+        if(res.status === 404) {
+      window.location.reload();
+      return;
+      }
         throw new Error(`Server returned ${res.status}`);
       }
       const data = await res.json();

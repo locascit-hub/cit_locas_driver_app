@@ -49,7 +49,8 @@ const getLatestNotificationTime = async () => {
 
 // ---------- NotificationScreen ----------
 export default function NotificationScreen() {
-  const { role } = useContext(UserContext);
+  const { role, token } = useContext(UserContext);
+  const { userData } = useContext(UserContext);
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([]);
@@ -58,12 +59,12 @@ export default function NotificationScreen() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
   const [loading, setLoading] = useState(false);
+ 
 
   // Redirect if no user data
   useEffect(() => {
-    const storedUserData = localStorage.getItem('test');
-    if (!storedUserData) navigate('/');
-  }, [navigate]);
+  if (!userData) navigate('/');
+}, [userData, navigate]);
 
   // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {
@@ -73,7 +74,13 @@ export default function NotificationScreen() {
 
       const latestTime = await getLatestNotificationTime();
 
-      const res = await fetch(`${getEndpoint()}/api/notifications?after=${latestTime}`);
+      const res = await fetch(`${getEndpoint()}/api/notifications?after=${latestTime}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
       const newNotifs = await res.json();
 
       if (newNotifs.length > 0) {
@@ -109,6 +116,10 @@ export default function NotificationScreen() {
     try {
       const res = await fetch(`${getEndpoint()}/api/notifications/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
       const data = await res.json();
       if (data.success) {
@@ -146,6 +157,7 @@ export default function NotificationScreen() {
       const res = await fetch(`${getEndpoint()}/api/notifications`, {
         method: 'POST',
         body: formData,
+        ...(token && { headers: { Authorization: `Bearer ${token}` } }),
       });
       const data = await res.json();
       if (data.success) {

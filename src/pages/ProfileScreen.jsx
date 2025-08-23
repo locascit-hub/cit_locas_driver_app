@@ -1,11 +1,10 @@
-import {React, useEffect, useState,useContext} from 'react';
+// src/pages/ProfileScreen.jsx
+import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts';
 import getEndpoint from '../utils/loadbalancer';
 
-
-
-// Inlined SVGs to replace the 'react-icons/fi' dependency
+// Inline SVG icons
 const BellIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
@@ -21,41 +20,37 @@ const LogoutIcon = () => (
   </svg>
 );
 
-
 export default function ProfileScreen({ userData: propUserData }) {
   const navigate = useNavigate();
-  const [userData, setUserData] = useState(propUserData || null);
-  const [shareLink, setShareLink] = useState(""); 
-  const [saving, setSaving] = useState(false);
-  const { role, setRole} = useContext(UserContext);   // 👈 role from context
-  const [user, setUser] = useState(null);
-  
+  const { token, userData: ctxUserData, role, setRole, setToken, setSno } = useContext(UserContext);
 
-  // --- Data loading and JWT parsing logic (no changes) ---
+  const [userData, setUserData] = useState(propUserData || ctxUserData || null);
+  const [shareLink, setShareLink] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!token) {
+      navigate('/', { replace: true });
+    }
+  }, [token, navigate]);
+
+  // Keep local userData in sync: prefer context, then prop, then fallback decode (minimal)
   useEffect(() => {
     if (propUserData) {
       setUserData(propUserData);
-      
+      if (propUserData.role) setRole && setRole(propUserData.role);
       return;
     }
-
-    const stored = localStorage.getItem('userData');
+    if (ctxUserData) {
+      setUserData(ctxUserData);
+      return;
+    }
+    //get token test from globally
+    const stored =localStorage.getItem('test');
     if (stored) {
       try {
-        const parsed = JSON.parse(stored);
-      setUserData(parsed);
-      if (parsed.role) setRole(parsed.role);
-       // 👈 Set role here
-      return;
-      } catch (e) {
-        console.error("Failed to parse user data from localStorage", e);
-      }
-    }
-
-    const token = localStorage.getItem('test');
-    if (token) {
-      try {
-        const base64Payload = token.split('.')[1];
+        const base64Payload = stored.split('.')[1];
         if (base64Payload) {
           const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
           const jsonPayload = decodeURIComponent(
@@ -66,25 +61,25 @@ export default function ProfileScreen({ userData: propUserData }) {
           );
           const payload = JSON.parse(jsonPayload);
           const email = payload.email || payload.studentId || payload.sub;
-         const roleFromToken = payload.role || "student";
+          const roleFromToken = payload.role || 'student';
           if (email) {
-            setUserData({ email, token,role: roleFromToken  });
-             setRole(roleFromToken);
-            
+            const minimal = { email, role: roleFromToken };
+            setUserData(minimal);
+            setRole && setRole(roleFromToken);
+             setToken && setToken(stored);
             return;
           }
         }
       } catch (err) {
-        console.warn('Failed to decode JWT payload', err);
+        // silent: provider should handle decoding normally
+        // console.warn('fallback decode failed', err);
       }
     }
 
-    navigate('/');
-  }, [navigate, propUserData]);
+    // if we reach here and no token/context, redirect (redirect effect above will also run)
+  }, [propUserData, ctxUserData, setRole]);
 
-  
-
-  // --- Email parsing logic (no changes) ---
+  // Parse email into name/department/batch
   const parseEmail = (email) => {
     if (!email) return { name: '', dept: '', batch: '' };
     const [beforeAt] = email.split('@');
@@ -97,46 +92,65 @@ export default function ProfileScreen({ userData: propUserData }) {
   };
 
   const logOut = () => {
+    // Clear context + persisted data
+    if (setToken) setToken(null);
+    if (setRole) setRole(null);
+    if (setSno) setSno && setSno(null);
+    // also clear localStorage for backward compatibility
     localStorage.removeItem('test');
+    localStorage.removeItem('sno');
     localStorage.removeItem('userData');
-    navigate('/');
+    navigate('/', { replace: true });
   };
-
-  const saveShareLink = async () => {
-    if (!shareLink.trim()) return;
-    setSaving(true);
-    try {
-      const resp = await fetch(`${getEndpoint()}/api/save-sharelink`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shareLink, inchargeEmail: userData.email })
-      });
-      const result = await resp.json();
-      if (resp.ok) {
-        alert("Share link updated successfully ✅");
-        setShareLink("");
-      } else {
-        alert("Failed to save share link: " + result.error);
-      }
-    } catch (err) {
-      console.error("Error saving share link:", err);
-      alert("Something went wrong while saving.");
-    }
-    setSaving(false);
-  };
-
-  // Parse user details once
-  const { name, dept, batch } = userData ? parseEmail(userData.email) : {};
-  const userInitial = name ? name.charAt(0).toUpperCase() : 'S';
-
-  if (!userData) {
-    // You can return a loading spinner here if you like
-    return null; 
+const saveShareLink = async () => {
+  if (!shareLink.trim()) return;
+  if (!userData?.email) {
+    alert('User email not available.');
+    return;
   }
+  setSaving(true);
+
+  try {
+    // fallback to localStorage if context token is null
+    const activeToken = token || localStorage.getItem('test');
+
+    const resp = await fetch(`${getEndpoint()}/api/save-sharelink`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
+      body: JSON.stringify({ shareLink: shareLink.trim(), inchargeEmail: userData.email }),
+    });
+
+    const result = await resp.json();
+    if(resp.status === 404) {
+      window.location.reload();
+      return;
+      }
+    if (resp.ok) {
+      alert('Share link updated successfully ✅');
+      setShareLink('');
+    } else {
+      alert('Failed to save share link: ' + (result.error || resp.statusText));
+    }
+  } catch (err) {
+    console.error('Error saving share link:', err);
+    alert('Something went wrong while saving.');
+  } finally {
+    setSaving(false);
+  }
+};
+
+  // If still loading or no userData yet, you can return a spinner — for now return null
+  if (!userData) return null;
+
+  const { name, dept, batch } = parseEmail(userData.email);
+  const userInitial = name ? name.charAt(0).toUpperCase() : 'S';
+  const shownRole = userData.role || role || 'student';
 
   return (
     <>
-      {/* Inlined CSS to remove the external stylesheet dependency */}
       <style>{`
         :root {
           --primary-blue: #1E40AF;
@@ -148,10 +162,11 @@ export default function ProfileScreen({ userData: propUserData }) {
           --border-color: #E5E7EB;
         }
         .profile-screen {
-          display: absolute;
+          display: flex;
           flex-direction: column;
+          min-height: 100vh;
           background-color: var(--background-color);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
         .profile-header {
           display: flex;
@@ -159,173 +174,66 @@ export default function ProfileScreen({ userData: propUserData }) {
           align-items: center;
           padding: 1rem 1.5rem;
           background-color: var(--card-background);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-          flex-shrink: 0;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
-        .profile-header-title {
-          margin: 0;
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-        .notification-btn {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: var(--text-secondary);
-          padding: 0.5rem;
-          border-radius: 50%;
-          transition: background-color 0.2s ease, color 0.2s ease;
-        }
-        .notification-btn:hover {
-          background-color: #f0f0f0;
-          color: var(--primary-blue);
-        }
+        .profile-header-title { margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
+        .notification-btn { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: 0.5rem; border-radius: 50%; }
+
         .profile-content {
           flex-grow: 1;
           padding: 1.5rem;
-          height: calc(110vh - 64px); /* Adjust based on header height */
           overflow-y: auto;
           display: flex;
           flex-direction: column;
-          gap: 1.5rem;
+          gap: 1.25rem;
         }
         .profile-banner {
           background: linear-gradient(135deg, var(--primary-blue), var(--light-blue));
           color: white;
-          padding: 2rem 1.5rem;
-          border-radius: 16px;
+          padding: 1.75rem 1.25rem;
+          border-radius: 12px;
           text-align: center;
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-          margin-bottom: 1.5rem;
+          box-shadow: 0 8px 16px rgba(0,0,0,0.08);
         }
         .profile-avatar {
-          width: 100px;
-          height: 100px;
-          border-radius: 50%;
-          border: 4px solid white;
-          margin-bottom: 1rem;
-          object-fit: cover;
-          background-color: #E0E0E0; /* Fallback color for placeholder */
-          color: #333; /* Text color for placeholder */
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 3rem;
-          font-weight: bold;
+          width: 100px; height: 100px; border-radius: 50%; border: 4px solid white;
+          margin: 0 auto 0.75rem auto; display: inline-flex; align-items: center; justify-content: center;
+          font-size: 2rem; font-weight: 700; background: #E0E0E0; color: #333;
         }
-        .profile-greeting {
-          margin: 0 0 0.25rem 0;
-          font-size: 1.75rem;
-          font-weight: 600;
-        }
-        .profile-email {
-          margin: 0;
-          font-size: 1rem;
-          opacity: 0.8;
-          textalign: left;
-        }
-        .profile-details-card {
-          background-color: var(--card-background);
-          border-radius: 16px;
-          padding: 1rem;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        .detail-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-        .detail-item:last-child {
-          border-bottom: none;
-        }
-        .detail-label {
-          font-size: 1rem;
-          color: var(--text-secondary);
-        }
-        .detail-value {
-          font-size: 1rem;
-          font-weight: 500;
-          color: var(--text-primary);
-        }
-       
-          .logout-btn.below-card {
-  width: 90%;
-  align-self: center;
-  padding: 0.6rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: white;
-  background-color: var(--primary-blue);
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  box-shadow: 0 4px 12px rgba(66, 66, 226, 0.3);
-}
+        .profile-greeting { margin: 0 0 6px 0; font-size: 1.25rem; font-weight: 700; }
+        .profile-email { margin: 0; font-size: 0.95rem; opacity: 0.9; }
 
-.logout-btn.below-card:hover {
-  background-color: #7591deff;
-}
+        .profile-details-card { background: var(--card-background); border-radius: 12px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .detail-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-label { font-size: 0.95rem; color: var(--text-secondary); }
+        .detail-value { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
 
-.logout-btn.below-card:active {
-  transform: scale(0.98);
-}
-  .sharelink-box {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
-        .sharelink-box input {
-          flex: 1;
-          padding: 0.7rem;
-          border-radius: 8px;
-          border: 1px solid #ccc;
-          font-size: 1rem;
-        }
-        .sharelink-box button {
-          padding: 0.7rem 1.2rem;
-          border: none;
-          border-radius: 8px;
-          background-color: var(--primary-blue);
-          color: white;
-          cursor: pointer;
-        }
-        .sharelink-box button:disabled {
-          background-color: #aaa;
-          cursor: not-allowed;
-        }
+        .logout-btn { width: 100%; margin-top: 0.75rem; padding: 0.7rem; font-size: 1rem; font-weight: 600; color: white; background-color: var(--primary-blue); border: none; border-radius: 10px; cursor: pointer; }
+        .logout-btn:hover { opacity: 0.95; transform: translateY(-1px); }
 
-       
-        }
+        .sharelink-box { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .sharelink-box input { flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.95rem; }
+        .sharelink-box button { padding: 0.6rem 0.9rem; border-radius: 8px; border: none; background: var(--primary-blue); color: #fff; cursor: pointer; }
+        .sharelink-box button:disabled { background: #9ca3af; cursor: not-allowed; }
       `}</style>
+
       <div className="profile-screen">
-        {/* Header */}
         <header className="profile-header">
           <h2 className="profile-header-title">My Profile</h2>
-          <button className="notification-btn" onClick={() => navigate('/notifications')} title="Notifications">
+          <button className="notification-btn" onClick={() => navigate('/notifications')} aria-label="Notifications">
             <BellIcon />
           </button>
         </header>
 
-        {/* Main Content */}
         <main className="profile-content">
-          {/* Profile Banner */}
-          <div className="profile-banner">
-            <img
-              src={`https://placehold.co/120x120/E0E0E0/333?text=${userInitial}`}
-              alt="User Avatar"
-              className="profile-avatar"
-              onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/120x120?text=Error'; }}
-            />
+          <section className="profile-banner">
+            <div className="profile-avatar" aria-hidden>{userInitial}</div>
             <h3 className="profile-greeting">Hello, {name || 'Student'}!</h3>
             <p className="profile-email">{userData.email}</p>
-          </div>
+          </section>
 
-          {/* Profile Details Card */}
-          <div className="profile-details-card">
+          <section className="profile-details-card" aria-labelledby="profile-details">
             <div className="detail-item">
               <span className="detail-label">Department</span>
               <span className="detail-value">{dept || 'Not Available'}</span>
@@ -336,33 +244,22 @@ export default function ProfileScreen({ userData: propUserData }) {
             </div>
             <div className="detail-item">
               <span className="detail-label">Role</span>
-              <span className="detail-value">{userData.role || "Student"}</span>
+              <span className="detail-value">{shownRole}</span>
             </div>
-          </div>
-          
-       {/* Logout Button just below the detail box */}
-        <button className="logout-btn below-card" onClick={logOut}>
-          <LogoutIcon />
-          Logout
-        </button>
 
-        {role === 'incharge' && (
-  <div className="sharelink-box">
-    <input
-      type="text"
-      placeholder="Enter new share link..."
-      value={shareLink}
-      onChange={(e) => setShareLink(e.target.value)}
-    />
-    <button onClick={saveShareLink} disabled={saving}>
-      {saving ? "Saving..." : "Save"}
-    </button>
-  </div>
-)}
+            {shownRole === 'incharge' && (
+              <div style={{ marginTop: 12 }}>
+                <div className="sharelink-box">
+                  <input aria-label="Share link" type="text" placeholder="Enter new share link..." value={shareLink} onChange={(e) => setShareLink(e.target.value)} />
+                  <button onClick={saveShareLink} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <button className="logout-btn" onClick={logOut} aria-label="Logout"><LogoutIcon /> Logout</button>
         </main>
-
       </div>
     </>
   );
 }
-
