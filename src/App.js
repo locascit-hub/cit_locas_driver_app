@@ -17,6 +17,7 @@ import NotificationScreen from './pages/NotificationScreen';
 import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
 import { UserProvider, UserContext } from './contexts'; // import context
+import InchargeLoginScreen from './pages/InchargeLogin';
 
 const WS_URL = 'http://localhost:8000'; // Keep WSS/HTTPS in production
 
@@ -28,7 +29,7 @@ const isIOS = () => {
 // Root wrapper
 function AppShell({ installPrompt, handleInstallClick }) {
   const location = useLocation();
-  const hideNavOn = ['/', '/login', '/register'];
+  const hideNavOn = ['/','/incharge-cit-login-xyz', '/login', '/register','/incharge-cit-xyz'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());
   const { token, userData } = useContext(UserContext);
    const isLoggedIn = !!token;
@@ -39,7 +40,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
       <Routes>
         
         <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
-        
+         <Route path="/incharge-cit-login-xyz" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />
@@ -48,7 +49,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/profile" element={<ProfileScreen userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
-        <Route path='/wel' element={<WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
+        <Route path="/incharge-cit-xyz" element={<InchargeLoginScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}

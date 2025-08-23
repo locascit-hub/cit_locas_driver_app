@@ -20,14 +20,7 @@
   border-top: 1px solid #ccc;
 }
 
-.status-bar {
-  padding: 0.5rem 1rem;
-  font-size: 14px;
-  background: #fff9db;
-  border-top: 1px solid #eee;
-  text-align: right;
-  color: #444;
-}
+
 
 .centered {
   display: flex;
