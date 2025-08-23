@@ -31,8 +31,8 @@ export default function LoginScreen() {
     return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
   };
 
-    const subscribeUserToPush = async (userEmail) => {
-    if ('serviceWorker' in navigator) {;
+    const subscribeUserToPush = async (userEmail, userToken) => {
+    if ('serviceWorker' in navigator) {
       try {
         const reg = await navigator.serviceWorker.ready;
         const subscription = await reg.pushManager.subscribe({
@@ -45,7 +45,7 @@ export default function LoginScreen() {
         const response = await fetch(`${getEndpoint()}/subscribe`, {
           method: "POST",
           body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
-          headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}), },
+          headers: { "Content-Type": "application/json", ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}), },
         });
         
         if (response.ok) {
@@ -113,7 +113,7 @@ export default function LoginScreen() {
             console.warn('decode failed', err);
           }
 
-      await subscribeUserToPush(email.trim());
+      await subscribeUserToPush(email.trim(),data.token);
      
       console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });
