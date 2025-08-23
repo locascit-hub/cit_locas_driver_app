@@ -6,12 +6,10 @@ import getEndpoint from '../utils/loadbalancer';
  
 
 
-export default function LoginScreen() {
+export default function InchargeLoginScreen() {
   const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('student');
-  const [otpPage, setOtpPage] = useState(false);
+  const [userType, setUserType] = useState('incharge');
   const [loading, setLoading] = useState(false);
   const { setRole } = useContext(UserContext);
 
@@ -64,66 +62,37 @@ export default function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (userType === 'student') {
-      setRole('student');
-      if (!email) {
-        alert('Please enter your email');
+if (userType === 'incharge') {
+      if (!email || !password) {
+        alert('Please enter email and password');
         return;
       }
-
       setLoading(true);
-      try{
-      if(!otpPage) {
-      // For student login, we can use the email as the identifier
-      //generate otp in server and send it to email
-      const response = await fetch(`${getEndpoint('helper')}/api/auth/student/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() })
-      });
 
-      const data = await response.json();
-      if (!response.ok) {
-        alert(`Login Error: ${data.error || 'Failed to send OTP'}`);
-        return;
-      }
-      alert('OTP sent to your email. Please check your inbox.');
-      setOtpPage(true);
-      // Here you can handle the OTP page navigation or state change
-      return;
-    }
-    else{
-      const response=await fetch(`${getEndpoint()}/api/auth/student/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), otp: otp.trim() })
-      })
-      
+      try {
+        const response = await fetch(`${getEndpoint()}/api/incharge/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim(),
+            password: password.trim()
+          })
+        });
+
         const data = await response.json();
-        if (!response.ok) {
-          throw new Error('Invalid OTP or email');
-        }
-      
+        if (!response.ok) throw new Error(data.error || 'Login failed');
+        setRole('incharge');
 
-      await subscribeUserToPush(email.trim());
+
+    
       localStorage.setItem('test',data.token);
-      localStorage.setItem('sno',data.sno);
-      console.log("Push subscription successful for student:", email.trim());
-      navigate('/home', { replace: true, state: { role: 'student' } });
-    }
-  } catch (err) {
+        navigate('/home', { replace: true, state: { role: 'incharge', email } });
+      } catch (err) {
         alert(`Login Error: ${err.message}`);
       }finally {
         setLoading(false);
       }
-      
-
-    } 
-    // else if (userType === 'driver') {
-    //   setRole('driver');
-    //     // Driver login logic here, if any
-    //     navigate('/home', { replace: true, state: { role: 'driver', mobile } });
-    // }
+    }
   };
 
   return (
@@ -135,13 +104,13 @@ export default function LoginScreen() {
       <div style={styles.content}>
         <div style={styles.header}>
           <FiTruck size={40} color="#FFFFFF" />
-          <h1 style={styles.title}>Welcome Back!</h1>
+          <h1 style={styles.title}>Welcome Back</h1>
         </div>
 
         <div style={styles.form}>
           <div style={styles.userTypeContainer}>
             <div style={styles.userTypeButtons}>
-              {['student'].map((type) => (
+              {['incharge'].map((type) => (
                 <button
                   key={type}
                   style={{
@@ -174,43 +143,29 @@ export default function LoginScreen() {
             </div>
           )} */}
 
-          {/* student email */}
-          {userType === 'student' && (
-            <div style={styles.inputContainer}>
-              <FiMail size={20} color="#64748B" />
-              <input
-                style={styles.input}
-                type="email"
-                placeholder="sample@citchennai.net"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          )}
-
-          {otpPage && userType === 'student' && (
-        <div style={styles.backButton} onClick={() => navigate('/login')}>
-          <FiArrowLeft size={24} color="#FFFFFF" />
-         
-        </div>
-      )}
-          {/* OTP input for student login */}
-          {otpPage && (
-            //back button on top left corner
-           
-            
-            <div style={styles.inputContainer}>
-              <FiLock size={20} color="#64748B" />
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Enter OTP" 
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-              />
-            </div>
-           
-            
+          {userType === 'incharge' && (
+            <>
+              <div style={styles.inputContainer}>
+                <FiMail size={20} color="#64748B" />
+                <input
+                  style={styles.input}
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div style={styles.inputContainer}>
+                <FiLock size={20} color="#64748B" />
+                <input
+                  style={styles.input}
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </>
           )}
           
             <button style={{ 
