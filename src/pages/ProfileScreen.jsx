@@ -27,6 +27,9 @@ export default function ProfileScreen({ userData: propUserData }) {
   const [userData, setUserData] = useState(propUserData || ctxUserData || null);
   const [shareLink, setShareLink] = useState('');
   const [saving, setSaving] = useState(false);
+  // new state for schedule link
+  const [scheduleLink, setScheduleLink] = useState('');
+  const [scheduleSaving, setScheduleSaving] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -102,7 +105,8 @@ export default function ProfileScreen({ userData: propUserData }) {
     localStorage.removeItem('userData');
     navigate('/', { replace: true });
   };
-const saveShareLink = async () => {
+
+  const saveShareLink = async () => {
   if (!shareLink.trim()) return;
   if (!userData?.email) {
     alert('User email not available.');
@@ -111,7 +115,6 @@ const saveShareLink = async () => {
   setSaving(true);
 
   try {
-    // fallback to localStorage if context token is null
     const activeToken = token || localStorage.getItem('test');
 
     const resp = await fetch(`${getEndpoint()}/api/save-sharelink`, {
@@ -123,11 +126,14 @@ const saveShareLink = async () => {
       body: JSON.stringify({ shareLink: shareLink.trim(), inchargeEmail: userData.email }),
     });
 
-    const result = await resp.json();
-    if(resp.status === 404) {
-      window.location.reload();
+    // parse json once (defensive)
+    const result = await resp.json().catch(() => ({ error: resp.statusText }));
+
+    if (resp.status === 404) {
+      alert('Resource not found: ' + (result.error || resp.statusText) + '. Please contact admin.');
       return;
-      }
+    }
+
     if (resp.ok) {
       alert('Share link updated successfully ✅');
       setShareLink('');
@@ -141,6 +147,49 @@ const saveShareLink = async () => {
     setSaving(false);
   }
 };
+
+const saveScheduleLink = async () => {
+  if (!scheduleLink.trim()) return;
+  if (!userData?.email) {
+    alert('User email not available.');
+    return;
+  }
+  setScheduleSaving(true);
+
+  try {
+    const activeToken = token || localStorage.getItem('test');
+
+    const resp = await fetch(`${getEndpoint()}/api/save-schedulelink`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(activeToken ? { Authorization: `Bearer ${activeToken}` } : {}),
+      },
+      body: JSON.stringify({ scheduleLink: scheduleLink.trim(), inchargeEmail: userData.email }),
+    });
+
+    // parse json once (defensive)
+    const result = await resp.json().catch(() => ({ error: resp.statusText }));
+
+    if (resp.status === 404) {
+      alert('Resource not found: ' + (result.error || resp.statusText) + '. Please contact admin.');
+      return;
+    }
+
+    if (resp.ok) {
+      alert('Schedule link saved and route table replacement initiated ✅');
+      setScheduleLink('');
+    } else {
+      alert('Failed to save schedule link: ' + (result.error || resp.statusText));
+    }
+  } catch (err) {
+    console.error('Error saving schedule link:', err);
+    alert('Something went wrong while saving the schedule link.');
+  } finally {
+    setScheduleSaving(false);
+  }
+};
+
 
   // If still loading or no userData yet, you can return a spinner — for now return null
   if (!userData) return null;
@@ -251,8 +300,17 @@ const saveShareLink = async () => {
               <div style={{ marginTop: 12 }}>
                 <div className="sharelink-box">
                   <input aria-label="Share link" type="text" placeholder="Enter new share link..." value={shareLink} onChange={(e) => setShareLink(e.target.value)} />
-                  <button onClick={saveShareLink} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+                  <button type="button" onClick={saveShareLink} disabled={saving}>{saving ? 'Saving...' : 'Save'}</button>
+
                 </div>
+
+                {/* NEW: Schedule link input reuses the exact same UI as the share link (no visual changes) */}
+                <div className="sharelink-box">
+                  <input aria-label="Schedule link" type="text" placeholder="Enter new schedule link (will replace route table)..." value={scheduleLink} onChange={(e) => setScheduleLink(e.target.value)} />
+                  <button type="button" onClick={saveScheduleLink} disabled={scheduleSaving}>{scheduleSaving ? 'Saving...' : 'Save'}</button>
+
+                </div>
+
               </div>
             )}
           </section>
