@@ -84,6 +84,13 @@ export default function SearchScreen() {
     state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
   });
 };
+
+const handleViewSchedule = (bus) => {
+  // Navigate to Schedule screen
+  navigate('/tracking', {
+    state: { bus }, // pass the whole bus object if you need inside ScheduleScreen
+  });
+};
   const onKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch();
   };
@@ -144,15 +151,23 @@ export default function SearchScreen() {
                     <h3 style={styles.busId}>{bus.regnNumber}</h3>
                     <p style={styles.busRoute}>{bus.route}</p>
                   </div>
-                  <button
-                  style={styles.trackButton}
-                  onClick={() =>
-                   handleViewBus(bus)
-                  }
-                >
-                  <FiMap size={16} color="#FFFFFF" />
-                  <span style={styles.trackButtonText}>Track Live</span>
-                </button>
+                 {bus.obu_id ? (
+  <button
+    style={styles.trackButton}
+    onClick={() => handleViewBus(bus)}
+  >
+    <FiMap size={16} color="#FFFFFF" />
+    <span style={styles.trackButtonText}>Track Live</span>
+  </button>
+) : (
+  <button
+    style={{ ...styles.trackButton, backgroundColor: "#2563EB" }}
+    onClick={() => handleViewSchedule(bus)}
+  >
+    <FiMap size={16} color="#FFFFFF" />
+    <span style={styles.trackButtonText}>Show Schedule</span>
+  </button>
+)}
                 </div>
 
                 <div style={styles.busDetails}>
