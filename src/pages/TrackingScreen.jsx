@@ -1,132 +1,99 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Popup, LayersControl, LayerGroup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import '../styles/routedetailscreen.css';
-import getEndpoint from '../utils/loadbalancer';
+import React, { useState, useEffect,useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import getEndpoint from "../utils/loadbalancer";
+import "../styles/routedetailscreen.css";
+import { UserContext } from "../contexts";
 
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
-  iconUrl: require('leaflet/dist/images/marker-icon.png'),
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
-});
-
-export default function RouteDetailScreen() {
+export default function ScheduleScreen() {
   const navigate = useNavigate();
-  const [locations, setLocations] = useState([]); // multiple bus locations
+  const [pdfUrl, setPdfUrl] = useState(null);
   const [loading, setLoading] = useState(true);
-  const pollRef = useRef(null);
+  const { token, role } = useContext(UserContext); 
 
   useEffect(() => {
-    const storedUserData = localStorage.getItem('test');
-    if (!storedUserData) {
-      navigate('/');
+   
+    if (!token) {
+      navigate("/");
     }
-  }, [navigate]);
+  }, [token,navigate]);
 
-  const busDivIcon = (busNo) =>
-    L.divIcon({
-      html: `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-          <img src="/bus-icon.webp" style="width:45px; height:45px;" />
-          <span style="
-            position: absolute;
-            bottom: 15px;
-            left: 18%;
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-            text-shadow: 1px 1px 2px black;
-          ">
-            ${busNo}
-          </span>
-        </div>
-      `,
-      className: "",
-      iconSize: [50, 50],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -40],
+ const fetchRouteChart = async () => {
+  try {
+    const res = await fetch(`${getEndpoint()}/get-route-chart`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     });
 
-  const fetchAllLocations = async () => {
-    try {
-      const res = await fetch(`${getEndpoint()}/get-location/all`);
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const data = await res.json();
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
 
-      // assuming data = [{_id, clgNo, latitude, longitude, timestamp}, ...]
-      setLocations(data);
-    } catch (e) {
-      console.error('Fetch error', e);
-      window.alert('Could not fetch live locations.');
-    } finally {
-      setLoading(false);
+    if (data.route_chart) {
+      setPdfUrl(data.route_chart);
+    } else {
+      console.error("No route chart in response:", data);
+      window.alert(data.error || "No route chart found.");
     }
-  };
+  } catch (e) {
+    console.error("Fetch error", e);
+    window.alert("Could not fetch route chart.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
-    fetchAllLocations();
-    pollRef.current = setInterval(fetchAllLocations, 10000);
-    return () => clearInterval(pollRef.current);
+    fetchRouteChart();
   }, []);
 
-  if (loading) return <div className="centered">Loading...</div>;
-  if (!locations.length) return <div className="centered">No live locations available.</div>;
+  if (loading) return <div className="centered">Loading Route Chart...</div>;
+  if (!pdfUrl) return <div className="centered">No route chart available.</div>;
 
   return (
-    <div className="route-screen">
-      <header className="header">
-        <h2>Live Bus Tracking</h2>
-      </header>
+<div style={styles.container}>
+  <header style={styles.header}>
+    <h2>Bus Route Chart</h2>
+  </header>
 
-      <div className="map-container">
-        <MapContainer
-          center={[locations[0].latitude, locations[0].longitude]}
-          zoom={15}
-          style={{ height: '100%', width: '100%' }}
-        >
-          <LayersControl position="topright">
-            <LayersControl.BaseLayer checked name="Street View">
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution="&copy; OpenStreetMap contributors"
-              />
-            </LayersControl.BaseLayer>
-
-            <LayersControl.BaseLayer name="Satellite View">
-              <LayerGroup>
-                <TileLayer
-                  url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                  attribution="Tiles &copy; Esri"
-                />
-                <TileLayer
-                  url="https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                  attribution="© OpenStreetMap contributors"
-                />
-              </LayerGroup>
-            </LayersControl.BaseLayer>
-          </LayersControl>
-
-          {locations.map((bus) => (
-            <Marker
-              key={bus._id}
-              position={[bus.latitude, bus.longitude]}
-              icon={busDivIcon(bus.clgNo || bus._id)}
-            >
-              <Popup>
-                <strong>Bus No:</strong> {bus.clgNo || bus._id}<br />
-                <strong>Last Updated:</strong> {new Date(bus.timestamp).toLocaleString()}
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
-
-      <div className="status-bar">
-        Last updated: <strong>{new Date().toLocaleTimeString()}</strong>
-      </div>
-    </div>
-  );
+  <div style={styles.pdfContainer}>
+    {pdfUrl ? (
+      <iframe src={pdfUrl} title="Schedule PDF" style={styles.pdfFrame} />
+    ) : (
+      <p>No schedule found</p>
+    )}
+  </div>
+</div>
+);
 }
+
+
+const styles = {
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100vh",
+    backgroundColor: "#f9f9f9",
+  },
+  header: {
+    textAlign: "center",
+    padding: "10px",
+    fontSize: "22px",
+    fontWeight: "bold",
+    backgroundColor: "#1976d2",
+    color: "white",
+    boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+  },
+  pdfContainer: {
+    flex: 1,
+    width: "100%",
+    height: "calc(100vh - 60px)", // 60px header + 60px bottom nav
+    overflow: "hidden",
+  },
+  pdfFrame: {
+    width: "100%",
+    height: "calc(100vh - 60px)",
+    border: "none",
+  },
+};
