@@ -11,7 +11,8 @@ export default function InchargeLoginScreen() {
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState('incharge');
   const [loading, setLoading] = useState(false);
-  const { setRole } = useContext(UserContext);
+  const { setRole,setToken } = useContext(UserContext);
+
 
 
   const [otp, setOtp] = useState('');
@@ -82,10 +83,9 @@ if (userType === 'incharge') {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Login failed');
         setRole('incharge');
+        setToken(data.token);
 
-
-    
-      localStorage.setItem('test',data.token);
+        localStorage.setItem('test',data.token);
         navigate('/home', { replace: true, state: { role: 'incharge', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);
