@@ -116,7 +116,7 @@ export default function HomeScreen() {
       <div style={styles.header}>
         <div style={styles.headerContent}>
           <p style={styles.greeting}>Hello Everyone!</p>
-          <p style={styles.welcomeText}>Welcome to CIT Transport</p>
+          <p style={styles.welcomeText}>Welcome to CIT Transport 1</p>
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
               <FiTruck size={24} color="#FFFFFF" />
