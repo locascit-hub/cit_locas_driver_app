@@ -35,7 +35,7 @@ const saveNotifications = async (notifs) => {
 
 const getAllNotifications = async () => {
   const db = await dbPromise;
-  const all=await db.getAll(STORE_NAME);
+  const all = await db.getAll(STORE_NAME);
   all.sort((a, b) => new Date(b.time) - new Date(a.time));
   return all;
 };
@@ -54,17 +54,16 @@ export default function NotificationScreen() {
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([]);
-  const [newNotification, setNewNotification] = useState('');
+  const [newNotification, setNewNotification] = useState({ title: "", description: "" });
   const [selectedImage, setSelectedImage] = useState(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
   const [loading, setLoading] = useState(false);
- 
 
   // Redirect if no user data
   useEffect(() => {
-  if (!userData) navigate('/');
-}, [userData, navigate]);
+    if (!userData) navigate('/');
+  }, [userData, navigate]);
 
   // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {
@@ -139,19 +138,19 @@ export default function NotificationScreen() {
   };
 
   const sendNotification = async () => {
-    if (!newNotification.trim() && !selectedImage) {
-      alert('Please enter a message or select an image');
+    if (!newNotification.title.trim() || !newNotification.description.trim()) {
+      alert('Please enter both title and description');
       return;
     }
 
     const formData = new FormData();
-    formData.append('title', 'Announcement');
-    formData.append('message', newNotification);
+    formData.append('title', newNotification.title);
+    formData.append('message', newNotification.description);
     formData.append('sender', 'Transport Incharge');
     formData.append('type', 'info');
     formData.append('targetStudentIds', 'all');
     if (selectedImage) formData.append('image', selectedImage);
-    //loading
+
     setLoading(true);
     try {
       const res = await fetch(`${getEndpoint()}/api/notifications`, {
@@ -161,13 +160,13 @@ export default function NotificationScreen() {
       });
       const data = await res.json();
       if (data.success) {
-        setNewNotification('');
+        setNewNotification({ title: "", description: "" });
         setSelectedImage(null);
         fetchNotifications();
       }
     } catch (error) {
       alert('Error sending notification');
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -210,7 +209,7 @@ export default function NotificationScreen() {
             <div style={styles.unreadBadge}>
               <p style={styles.unreadCount}>
                 {notifications.filter(n => !n.read).length}
-                </p>
+              </p>
             </div>
           )}
         </div>
@@ -234,12 +233,19 @@ export default function NotificationScreen() {
               <button style={styles.removeImageButton} onClick={() => setSelectedImage(null)}>Remove Image</button>
             </div>
           )}
+          <input
+            type="text"
+            style={styles.titleInput}
+            placeholder="Enter title..."
+            value={newNotification.title}
+            onChange={(e) => setNewNotification(prev => ({ ...prev, title: e.target.value }))}
+          />
           <div style={styles.inputContainer}>
             <textarea
               style={styles.input}
-              placeholder="Type your message..."
-              value={newNotification}
-              onChange={(e) => setNewNotification(e.target.value)}
+              placeholder="Type your description..."
+              value={newNotification.description}
+              onChange={(e) => setNewNotification(prev => ({ ...prev, description: e.target.value }))}
             />
             <button style={styles.sendButton} onClick={sendNotification}>
               <FiSend size={16} color="#FFFFFF" />
@@ -359,31 +365,31 @@ const styles = {
     borderBottom: '1px solid #E5E7EB',
   },
   previewContainer: {
-  position: 'relative',
-  display: 'inline-block',
-  marginBottom: 10,
-},
-removeImageButton: {
-  position: 'absolute',
-  top: 6,
-  right: 6,
-  backgroundColor: '#EF4444',
-  color: '#FFFFFF',
-  border: 'none',
-  borderRadius: 6,
-  padding: '2px 6px',
-  fontSize: 10,
-  cursor: 'pointer',
-},
-deleteButton: {
-  position: 'absolute',
-  top: 12,
-  right: 12,
-  background: 'transparent',
-  border: 'none',
-  cursor: 'pointer',
-  padding: 4,
-},
+    position: 'relative',
+    display: 'inline-block',
+    marginBottom: 10,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#EF4444',
+    color: '#FFFFFF',
+    border: 'none',
+    borderRadius: 6,
+    padding: '2px 6px',
+    fontSize: 10,
+    cursor: 'pointer',
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: 4,
+  },
   headerLeft: {
     display: 'flex',
     flexDirection: 'row',
@@ -446,6 +452,18 @@ deleteButton: {
     marginBottom: 10,
     borderRadius: 8,
     objectFit: 'cover',
+  },
+  titleInput: {
+    width: '100%',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: '12px 16px',
+    fontSize: '16px',
+    fontWeight: 400,
+    color: '#1F2937',
+    border: '1px solid #E5E7EB',
+    marginBottom: 12,
+    fontFamily: 'Inter, sans-serif',
   },
   inputContainer: {
     display: 'flex',
@@ -570,20 +588,11 @@ deleteButton: {
     padding: 40,
     textAlign: 'center',
   },
-  emptyTitle: {
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#6B7280',
-    margin: 0,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyMessage: {
+  emptyStateText: {
     fontSize: '14px',
     fontWeight: 400,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: '20px',
-    margin: 0,
+    color: '#6B7280',
+    marginTop: 12,
   },
 };
+

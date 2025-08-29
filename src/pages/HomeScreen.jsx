@@ -1,10 +1,10 @@
 import React, { useEffect, useContext,useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell } from 'react-icons/fi';
+import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell, FiX } from 'react-icons/fi';
 
 import '../styles/homescreen.css';
 import { UserContext } from '../contexts';
-import { getRecentBuses } from '../utils/recentBuses';
+import { getRecentBuses, removeRecentBus } from '../utils/recentBuses';
 
 
 export default function HomeScreen() {
@@ -20,19 +20,20 @@ export default function HomeScreen() {
 
     setRecent(getRecentBuses());
     
-        // listen to storage changes from other tabs/windows
-        const onStorage = (e) => {
-          if (e.key === 'recentBuses') setRecent(getRecentBuses());
-        };
-        window.addEventListener('storage', onStorage);
-    
-        return () => {
-          window.removeEventListener('storage', onStorage);
-        };
-  }, [token, navigate]);
+    // listen to storage changes from other tabs/windows
+    const onStorage = (e) => {
+      if (e.key === 'recentBuses') setRecent(getRecentBuses());
+    };
+    const onRecentChanged = () => setRecent(getRecentBuses());
 
-    
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('recentBuses:changed', onRecentChanged);
   
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('recentBuses:changed', onRecentChanged);
+    };
+  }, [token, navigate]);
 
   useEffect(() => {
     function setupDrag(scroller) {
@@ -105,6 +106,11 @@ export default function HomeScreen() {
     return bus.route || bus.obu_id || bus.regnNumber || "—";
   }
 
+  const handleDelete = (bus) => {
+    removeRecentBus(bus);
+    setRecent(getRecentBuses()); // update UI immediately
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -146,11 +152,23 @@ export default function HomeScreen() {
                   return (
                     <div 
                       key={id} 
-                      style={{ ...styles.busCardHorizontal, minWidth: 180 }} 
+                      style={{ ...styles.busCardHorizontal, minWidth: 180, position: 'relative' }} 
                       onClick={() => navigate('/route-detail', {
-    state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
-  })}
+                        state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
+                      })}
                     >
+                      {/* delete button */}
+                      <button
+                        aria-label="Remove"
+                        style={styles.deleteBtn}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(bus);
+                        }}
+                      >
+                        <FiX size={14} />
+                      </button>
+
                       <div>
                         <h4 style={{ margin: 0, fontSize: 14 }}>{id}</h4>
                         <p style={{ margin: '4px 0', color: '#6B7280' }}>{bus.route || 'Route'}</p>
@@ -241,6 +259,21 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
+  },
+
+  deleteBtn: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    border: 'none',
+    background: '#E5E7EB',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
   },
 
   busCard: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 12 },

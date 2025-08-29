@@ -1,11 +1,4 @@
-
-
 // utils/recentBuses.js
-// Simple helper to manage recently searched buses in localStorage
-// - Stores an array under key 'recentBuses'
-// - Keeps most-recent-first, unique by obu_id or _id or regnNumber
-// - Caps length to 5
-
 const STORAGE_KEY = 'recentBuses';
 const MAX_RECENT = 5;
 
@@ -33,20 +26,40 @@ export function addRecentBus(bus) {
     const key = _getKey(bus);
     if (!key) return;
     const list = getRecentBuses();
-    // remove existing matching
     const filtered = list.filter((b) => _getKey(b) !== key);
-    // add to front
     filtered.unshift(bus);
-    // cap
     const trimmed = filtered.slice(0, MAX_RECENT);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+    _notifyRecentChanged(); // <— ensure same-tab listens can react instantly
   } catch (e) {
     console.warn('Failed to add recent bus', e);
+  }
+}
+
+export function removeRecentBus(busOrKey) {
+  try {
+    const key = typeof busOrKey === 'string' ? busOrKey : _getKey(busOrKey);
+    if (!key) return;
+    const list = getRecentBuses();
+    const next = list.filter((b) => _getKey(b) !== key);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    _notifyRecentChanged();
+  } catch (e) {
+    console.warn('Failed to remove recent bus', e);
   }
 }
 
 export function clearRecentBuses() {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    _notifyRecentChanged();
   } catch (e) {}
+}
+
+// Emit a custom event so the current tab can update instantly.
+// (The native 'storage' event only fires in *other* tabs.)
+function _notifyRecentChanged() {
+  try {
+    window.dispatchEvent(new CustomEvent('recentBuses:changed'));
+  } catch {}
 }
