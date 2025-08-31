@@ -44,12 +44,12 @@ export default function RouteDetailScreen() {
     L.divIcon({
       html: `
       <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        <img src="/bus-icon.webp" style="width:45px; height:45px;" />
+        <img src="/bus-icon.png" style="width:57px; height:57px;" />
         <span style="
           position: absolute;
-          bottom: 15px;
-          left: 18%;
-          color: white;
+          bottom: 24px;
+          left: 32%;
+          color: black;
           font-weight: bold;
           font-size: 14px;
           text-shadow: 1px 1px 2px black;

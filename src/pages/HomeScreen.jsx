@@ -1,6 +1,6 @@
 import React, { useEffect, useContext,useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell, FiX } from 'react-icons/fi';
+import { FiTruck, FiUsers, FiMapPin, FiSearch, FiClock, FiBell, FiX, FiUser } from 'react-icons/fi';
 
 import '../styles/homescreen.css';
 import { UserContext } from '../contexts';
@@ -199,12 +199,16 @@ export default function HomeScreen() {
               <FiMapPin size={32} color="#059669" />
               <p style={styles.actionText}>Live Tracking</p>
             </div>
-            <div style={styles.notificationWrapper}>
-              <div className="action-card" style={{ ...styles.actionCard, ...styles.actionCardFixedWidth }} onClick={() => navigate("/notifications") }>
+            <div className="action-card" style={styles.actionCard} onClick={() => navigate("/profile") }>
+              <FiUser size={32} color="#059669" />
+              <p style={styles.actionText}>Profile</p>
+            </div>
+            
+              <div className="action-card" style={ styles.actionCard } onClick={() => navigate("/notifications") }>
                 <FiBell size={32} color="#7C3AED" />
                 <p style={styles.actionText}>Notifications</p>
               </div>
-            </div>
+            
           </div>
         </div>
       </div>

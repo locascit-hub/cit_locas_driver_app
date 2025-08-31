@@ -191,6 +191,8 @@ const saveScheduleLink = async () => {
 };
 
 
+
+
   // If still loading or no userData yet, you can return a spinner — for now return null
   if (!userData) return null;
 
@@ -198,8 +200,10 @@ const saveScheduleLink = async () => {
   const userInitial = name ? name.charAt(0).toUpperCase() : 'S';
   const shownRole = userData.role || role || 'student';
 
+
   return (
     <>
+    
       <style>{`
         :root {
           --primary-blue: #1E40AF;

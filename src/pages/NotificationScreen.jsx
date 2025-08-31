@@ -164,6 +164,7 @@ export default function NotificationScreen() {
         setSelectedImage(null);
         fetchNotifications();
       }
+      alert('Notification sent successfully');
     } catch (error) {
       alert('Error sending notification');
     } finally {
@@ -247,7 +248,7 @@ export default function NotificationScreen() {
               value={newNotification.description}
               onChange={(e) => setNewNotification(prev => ({ ...prev, description: e.target.value }))}
             />
-            <button style={styles.sendButton} onClick={sendNotification}>
+            <button style={{...styles.sendButton,backgroundColor: loading ? '#94a3b8' : '#2563EB',}} onClick={sendNotification} disabled={loading}>
               <FiSend size={16} color="#FFFFFF" />
             </button>
           </div>

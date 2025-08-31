@@ -113,7 +113,7 @@ export default function LoginScreen() {
             console.warn('decode failed', err);
           }
 
-      //await subscribeUserToPush(email.trim(),data.token);
+      await subscribeUserToPush(email.trim(),data.token);
      
       console.log("Push subscription successful for student:", email.trim());
       navigate('/home', { replace: true, state: { role: 'student' } });

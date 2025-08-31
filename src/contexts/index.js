@@ -5,7 +5,7 @@ import decryptJWT from '../utils/decrypt';
 export const UserContext = createContext(null);
 
 export function UserProvider({ children }) {
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState(() => localStorage.getItem('role') || null);
   const [token, setToken] = useState(() => localStorage.getItem('test') || null);
   const [sno, setSno] = useState(() => localStorage.getItem('sno') || null);
   const [userData, setUserData] = useState(null);
@@ -49,6 +49,7 @@ export function UserProvider({ children }) {
     const onStorage = (e) => {
       if (e.key === 'test') setToken(e.newValue);
       if (e.key === 'sno') setSno(e.newValue);
+      if (e.key === 'role') setRole(e.newValue);
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -57,8 +58,11 @@ export function UserProvider({ children }) {
   // If you want setSno to persist automatically, you can watch sno as well:
   useEffect(() => {
     if (sno) localStorage.setItem('sno', sno);
-    else localStorage.removeItem('sno');
-  }, [sno]);
+     else localStorage.removeItem('sno');
+    if(role) localStorage.setItem('role', role);
+    else localStorage.removeItem('role');
+   
+  }, [sno,role]);
 
   return (
     <UserContext.Provider value={{
