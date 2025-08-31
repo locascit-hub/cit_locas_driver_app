@@ -6,13 +6,6 @@ export default function WelcomeScreen({ installPrompt, handleInstallClick }) {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    console.log('hello')
-    console.log(window.location.pathname === '/incharge-cit-login-xyz');
-    if(window.location.pathname === '/incharge-cit-login-xyz'){
-      console.log('ksks')
-      navigate('/incharge-cit-xyz');
-      return;
-    }
     navigate('/login');
   };
   return (

@@ -40,7 +40,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
       <Routes>
         
         <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
-         <Route path="/incharge-cit-login-xyz" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
+        <Route path="/incharge-cit-login-xyz" element={isLoggedIn ? <Navigate to="/home" /> : <InchargeLoginScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />
@@ -49,7 +49,6 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/notifications" element={<NotificationScreen />} />
         <Route path="/profile" element={<ProfileScreen userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
-        <Route path="/incharge-cit-xyz" element={<InchargeLoginScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}

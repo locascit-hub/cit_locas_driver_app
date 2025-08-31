@@ -40,6 +40,11 @@ const getAllNotifications = async () => {
   return all;
 };
 
+const getNotificationById = async (id) => {
+  const db = await dbPromise;
+  return db.get(STORE_NAME, id);
+};
+
 const getLatestNotificationTime = async () => {
   const db = await dbPromise;
   const all = await db.getAll(STORE_NAME);
@@ -91,15 +96,28 @@ export default function NotificationScreen() {
     }
   };
 
+
   useEffect(() => {
     fetchNotifications();
 
-    //  Listen for push events forwarded from service worker
+    // Listen for push events forwarded from service worker
     if ('serviceWorker' in navigator) {
-      const handler = (event) => {
+      const handler = async (event) => {
         if (event.data?.type === 'NEW_NOTIFICATION') {
-          console.log('Push message received, refreshing notifications...');
-          fetchNotifications();
+          const notifId = event.data?.notifId;
+          if (notifId) {
+            console.log('Push received for ID:', notifId);
+            const exists = await getNotificationById(notifId);
+            if (exists) {
+              console.log("Notification already in IDB, skipping fetch:", notifId);
+              return;
+            }
+            console.log('Push without ID → full refresh');
+            fetchNotifications();
+          }
+          else{
+             fetchNotifications();
+          }
         }
       };
       navigator.serviceWorker.addEventListener('message', handler);

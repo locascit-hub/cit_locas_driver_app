@@ -84,13 +84,14 @@ self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
   const options = {
     body: data.body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/badge.png',
-    data: data.data,
-    requireInteraction: false, // notification stays until user clicks (optional)
-    silent: false // request sound if the system allows it
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/badge.png",
+    data: data.data, // keep the full data object here
+    requireInteraction: false,
+    silent: false,
   };
-   event.waitUntil(
+
+  event.waitUntil(
     self.registration.showNotification(data.title, options).then(() => {
       if (data.data && data.data.playSound) {
         self.playNotificationSound();
@@ -98,13 +99,18 @@ self.addEventListener("push", (event) => {
     })
   );
 
-    self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
+  // Send notifId to all open clients
+  self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
     clients.forEach((client) => {
-      client.postMessage({ type: "NEW_NOTIFICATION" });
+      client.postMessage({
+        type: "NEW_NOTIFICATION",
+        notifId: data.data?.notifId, // ✅ fixed here
+      });
     });
   });
-
 });
+
+
 
 self.playNotificationSound = function() {
   

@@ -43,20 +43,29 @@ export default function RouteDetailScreen() {
   const busDivIcon = (busNo) =>
     L.divIcon({
       html: `
-      <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-        <img src="/bus-icon.png" style="width:57px; height:57px;" />
-        <span style="
-          position: absolute;
-          bottom: 24px;
-          left: 32%;
-          color: black;
-          font-weight: bold;
-          font-size: 14px;
-          text-shadow: 1px 1px 2px black;
-        ">
-          ${busNo}
-        </span>
-      </div>
+<div style="
+  display: flex; 
+  align-items: center; 
+  justify-content: flex-start; 
+  background-color: rgba(255, 255, 255, 0.8); 
+  border-radius: 8px; 
+  padding: 4px 8px;
+  border: 1px solid #316adeff;
+  width: fit-content;
+">
+  <!-- Bus Icon -->
+  <img src="/bus-icon.png" style="width:30px; height:30px; border-radius:6px; margin-right:6px;" />
+
+  <!-- Bus Number -->
+  <span style="
+    color: black; 
+    font-weight: bold; 
+    font-size: 20px; 
+  ">
+    ${busNo}
+  </span>
+</div>
+
     `,
       className: "",
       iconSize: [50, 50],
