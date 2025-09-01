@@ -246,13 +246,7 @@ export default function RouteDetailScreen() {
 
       <ReloadControl onReload={fetchLocation} />
 
-      {/* Map Section */}
-      <div style={{ height: "75%" }}>
-        <MapContainer
-          center={[loc.lat, loc.long]}
-          zoom={20}
-          style={{ height: "100%", width: "100%" }}
-        >
+      
       {/* Header */}
       <div style={{height:"75%"}}>
         <MapContainer center={[loc.lat,loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
