@@ -25,6 +25,49 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require("leaflet/dist/images/marker-shadow.png"),
 });
 
+//  Add AnimatedMarker back for testing
+function AnimatedMarker({ position, icon, children }) {
+  const markerRef = useRef(null);
+  const prevPos = useRef(position); // Hardcoded previous pos (Bangalore center)
+
+  useEffect(() => {
+    if (!markerRef.current) return;
+
+    const marker = markerRef.current;
+    const from = L.latLng(prevPos.current);
+    const to = L.latLng(position);
+
+    if (!from || !to || from.equals(to)) return;
+
+    let start = null;
+    const duration = 2000; // 2 sec animation
+
+    function animate(timestamp) {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+
+      const lat = from.lat + (to.lat - from.lat) * progress;
+      const lng = from.lng + (to.lng - from.lng) * progress;
+      marker.setLatLng([lat, lng]);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        prevPos.current = to; // update for next run
+      }
+    }
+
+    requestAnimationFrame(animate);
+  }, [position]);
+
+  return (
+    <Marker ref={markerRef} position={prevPos.current} icon={icon}>
+      {children}
+    </Marker>
+  );
+}
+
+
 export default function RouteDetailScreen() {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -186,7 +229,7 @@ const interval = setInterval(() => {
 
       {/* Header */}
       <div style={{height:"75%"}}>
-        <MapContainer center={[loc.lat, loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
+        <MapContainer center={[loc.lat,loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Street View">
               <TileLayer
@@ -210,7 +253,7 @@ const interval = setInterval(() => {
           </LayersControl>
 
 
-          <Marker position={[loc.lat, loc.long]} icon={busDivIcon(clgNo || _id)}>
+          <AnimatedMarker position={[loc.lat,loc.long]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
               <strong>Bus No:</strong> {clgNo || _id}<br />
               <strong>Last Updated:</strong> {new Intl.DateTimeFormat("en-IN", {
@@ -219,7 +262,7 @@ const interval = setInterval(() => {
     timeZone: "Asia/Kolkata", // change if needed
   }).format(new Date(loc.last))}
             </Popup>
-          </Marker>
+          </AnimatedMarker>
 
           {/* Reload Button inside Map */}
 
