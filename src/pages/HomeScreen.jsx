@@ -116,21 +116,21 @@ export default function HomeScreen() {
       <div style={styles.header}>
         <div style={styles.headerContent}>
           <p style={styles.greeting}>Hello Everyone!</p>
-          <p style={styles.welcomeText}>Welcome to CIT Transport 1</p>
+          <p style={styles.welcomeText}>Welcome to CIT Transport </p>
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
               <FiTruck size={24} color="#FFFFFF" />
-              <p style={styles.statNumber}>101</p>
+              <p style={styles.statNumber}>100</p>
               <p style={styles.statLabel}>Active Buses</p>
             </div>
             <div style={styles.statItem}>
               <FiUsers size={24} color="#FFFFFF" />
-              <p style={styles.statNumber}>4500</p>
+              <p style={styles.statNumber}>5200</p>
               <p style={styles.statLabel}>Students</p>
             </div>
             <div style={styles.statItem}>
               <FiMapPin size={24} color="#cfababff" />
-              <p style={styles.statNumber}>65</p>
+              <p style={styles.statNumber}>85</p>
               <p style={styles.statLabel}>Routes</p>
             </div>
           </div>
