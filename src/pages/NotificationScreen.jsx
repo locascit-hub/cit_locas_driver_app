@@ -301,7 +301,7 @@ export default function NotificationScreen() {
               style={styles.notificationContent}
               onClick={() => {
                 if (notification.imageUrl) {
-                  const uri = `${notification.imageUrl}`;
+                  const uri = `${getEndpoint()}/api/img?id=${notification.imageUrl}`;
                   setLightboxImages([{ src: uri }]);
                   setLightboxOpen(true);
                 } else {
@@ -322,12 +322,12 @@ export default function NotificationScreen() {
 
               {notification.imageUrl && (
                 <img
-                  src={`${notification.imageUrl}`}
+                  src={`${getEndpoint()}/api/img?id=${notification.imageUrl}`}
                   alt="attachment"
                   style={styles.notificationImage}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setLightboxImages([{ src: `${notification.imageUrl}` }]);
+                    setLightboxImages([{ src: `${getEndpoint()}/api/img?id=${notification.imageUrl}` }]);
                     setLightboxOpen(true);
                   }}
                 />
