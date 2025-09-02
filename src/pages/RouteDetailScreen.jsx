@@ -26,6 +26,10 @@ L.Icon.Default.mergeOptions({
 function AnimatedMarker({ position, icon, children }) {
   const markerRef = useRef(null);
   const prevPos = useRef(position); // Hardcoded previous pos (Bangalore center)
+  const [initialPosition] = useState(position);
+  
+
+  
 
   useEffect(() => {
     if (!markerRef.current) return;
@@ -34,7 +38,10 @@ function AnimatedMarker({ position, icon, children }) {
     const from = L.latLng(prevPos.current);
     const to = L.latLng(position);
 
-    if (!from || !to || from.equals(to)) return;
+    if (!from || !to || from.equals(to)){
+      prevPos.current=position;
+       return;
+    }
 
     let start = null;
     const duration = 2000; // 2 sec animation
@@ -58,7 +65,7 @@ function AnimatedMarker({ position, icon, children }) {
   }, [position]);
 
   return (
-    <Marker ref={markerRef} position={prevPos.current} icon={icon}>
+    <Marker ref={markerRef} position={initialPosition} icon={icon}>
       {children}
     </Marker>
   );
@@ -73,6 +80,14 @@ export default function RouteDetailScreen() {
   const [loading, setLoading] = useState(true);
   const { token } = useContext(UserContext);
   const [remtimer, setRemtimer] = useState(0);
+  const mapRef = useRef(null);
+
+
+  useEffect(() => {
+  if (mapRef.current && loc?.lat && loc?.lng) {
+    mapRef.current.panTo([loc.lat, loc.lng]);
+  }
+}, [loc]);
 
   useEffect(() => {
     if (!token) navigate("/");
@@ -249,7 +264,7 @@ export default function RouteDetailScreen() {
       
       {/* Header */}
       <div style={{height:"75%"}}>
-        <MapContainer center={[loc.lat,loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
+        <MapContainer ref={mapRef} center={[loc.lat,loc.long]} zoom={20} style={{ height: '100%', width: '100%' }}>
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Street View">
               <TileLayer
