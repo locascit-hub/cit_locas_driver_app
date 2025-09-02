@@ -88,12 +88,12 @@ const styles = {
   pdfContainer: {
     flex: 1,
     width: "100%",
-    height: "calc(100vh - 120px)", // 60px header + 60px bottom nav
+    height: "calc(100dvh - 120px)", // 60px header + 60px bottom nav
     overflow: "hidden",
   },
   pdfFrame: {
     width: "100%",
-    height: "calc(100vh - 120px)",
+    height: "calc(100dvh - 120px)",
     border: "none",
   },
 };
