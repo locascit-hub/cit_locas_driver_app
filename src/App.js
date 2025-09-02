@@ -19,8 +19,6 @@ import RouteDetailScreen from './pages/RouteDetailScreen';
 import { UserProvider, UserContext } from './contexts'; // import context
 import InchargeLoginScreen from './pages/InchargeLogin';
 
-const WS_URL = 'http://localhost:8000'; // Keep WSS/HTTPS in production
-
 // Utility: Detect iOS Safari/Chrome (all use WebKit)
 const isIOS = () => {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -28,6 +26,53 @@ const isIOS = () => {
 
 // Root wrapper
 function AppShell({ installPrompt, handleInstallClick }) {
+
+
+  async function purgeIndexedDB(dbname) {
+  if (!('indexedDB' in window)) {
+    console.warn("This browser doesn't support IndexedDB.");
+    return;
+  }
+
+  if (indexedDB.databases) {
+    // Modern browsers (Chrome, Edge, some Firefox)
+    indexedDB.deleteDatabase(dbname);
+  } else {
+    console.warn("indexedDB.databases() not supported in this browser. You must know the DB names to delete them.");
+  }
+}
+
+//version purge
+  useEffect(() => {
+    const version=localStorage.getItem('__v');
+    if(version!=='1.0.0'){
+      //purge idb
+      purgeIndexedDB('notifications-db');
+      localStorage.removeItem('recentBuses');
+      localStorage.setItem('__v','1.0.0');
+    }
+  },[]);
+
+
+  // remote logout
+  useEffect(() => {
+
+    // Listen for push events forwarded from service worker
+    if ('serviceWorker' in navigator) {
+      const handler = async (event) => {
+        if (event.data?.type === 'LOG_OUT') {
+              purgeIndexedDB('notifications-db');
+              localStorage.clear();
+              location.reload();
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handler);
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, []);
+
+
+
   const location = useLocation();
   const hideNavOn = ['/','/incharge-cit-login-xyz', '/login', '/register','/incharge-cit-xyz'];
   const showNav = !hideNavOn.includes(location.pathname.toLowerCase());

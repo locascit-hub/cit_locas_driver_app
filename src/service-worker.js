@@ -102,13 +102,39 @@ self.addEventListener("push", (event) => {
   // Send notifId to all open clients
   self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
     clients.forEach((client) => {
-      client.postMessage({
-        type: "NEW_NOTIFICATION",
-        notifId: data.data?.notifId, // ✅ fixed here
-      });
+      if(data.data?.type === 'LOG_OUT') {
+        client.postMessage({
+          type: "LOG_OUT"
+        });
+      } else {
+        client.postMessage({
+          type: "NEW_NOTIFICATION",
+          notifId: data.data?.notifId,
+        });
+      }
     });
   });
 });
+
+// ✅ Add click handler for navigation
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || "/notifications"; // default to notifications if no URL
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+      for (let client of windowClients) {
+        if (client.url.includes(targetUrl) && "focus" in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
 
 
 
