@@ -7,7 +7,7 @@ import getEndpoint from '../utils/loadbalancer';
  
 
 
-export default function LoginScreen() {
+export default function LoginScreen({purgeIDB}) {
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
@@ -121,6 +121,8 @@ export default function LoginScreen() {
       await subscribeUserToPush(email.trim(),data.token);
      
       console.log("Push subscription successful for student:", email.trim());
+      localStorage.clear();
+      purgeIDB();
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
   } catch (err) {

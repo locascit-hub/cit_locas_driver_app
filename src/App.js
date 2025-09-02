@@ -90,7 +90,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         
         <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
         <Route path="/incharge-cit-login-xyz" element={isLoggedIn ? <Navigate to="/home" /> : <InchargeLoginScreen />} />
-        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/login" element={<LoginScreen purgeIDB={purgeIndexedDB} />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />
         <Route path="/search" element={<SearchScreen />} />
