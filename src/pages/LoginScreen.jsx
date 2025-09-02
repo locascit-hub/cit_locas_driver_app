@@ -121,7 +121,7 @@ export default function LoginScreen({purgeIDB}) {
       await subscribeUserToPush(email.trim(),data.token);
      
       console.log("Push subscription successful for student:", email.trim());
-      localStorage.clear();
+      localStorage.removeItem('recentBuses');
       purgeIDB();
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
