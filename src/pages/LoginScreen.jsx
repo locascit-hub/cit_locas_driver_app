@@ -72,6 +72,11 @@ export default function LoginScreen() {
         return;
       }
 
+      if(email.split('.').pop() != "net"){
+        alert("Please use only cit college email !!")
+        return;
+      }
+
       setLoading(true);
       try{
       if(!otpPage) {

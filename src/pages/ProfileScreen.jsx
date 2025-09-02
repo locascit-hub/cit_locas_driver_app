@@ -20,7 +20,7 @@ const LogoutIcon = () => (
   </svg>
 );
 
-export default function ProfileScreen({ userData: propUserData }) {
+export default function ProfileScreen({ userData: propUserData , logoutPurge }) {
   const navigate = useNavigate();
   const { token, userData: ctxUserData, role, setRole, setToken, setSno } = useContext(UserContext);
 
@@ -95,15 +95,9 @@ export default function ProfileScreen({ userData: propUserData }) {
   };
 
   const logOut = () => {
-    // Clear context + persisted data
-    if (setToken) setToken(null);
-    if (setRole) setRole(null);
-    if (setSno) setSno && setSno(null);
-    // also clear localStorage for backward compatibility
-    localStorage.removeItem('test');
-    localStorage.removeItem('sno');
-    localStorage.removeItem('userData');
-    navigate('/', { replace: true });
+    logoutPurge('notifications-db');
+    localStorage.clear();
+    window.location.reload();
   };
 
   const saveShareLink = async () => {
@@ -320,6 +314,9 @@ const saveScheduleLink = async () => {
           </section>
 
           <button className="logout-btn" onClick={logOut} aria-label="Logout"><LogoutIcon /> Logout</button>
+          <footer>
+           <center>Made by <b>Team Locas-CIT</b></center>
+          </footer>
         </main>
       </div>
     </>

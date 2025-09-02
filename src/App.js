@@ -46,6 +46,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
   useEffect(() => {
     const st_version='1.0.0'
     const version=localStorage.getItem('__v');
+    console.log(version);
     if(version!==st_version){
       //purge idb
       purgeIndexedDB('notifications-db');
@@ -95,7 +96,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/tracking" element={<TrackingScreen />} />
         <Route path="/notifications" element={<NotificationScreen />} />
-        <Route path="/profile" element={<ProfileScreen userData={userData} />} />
+        <Route path="/profile" element={<ProfileScreen logoutPurge={purgeIndexedDB} userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
