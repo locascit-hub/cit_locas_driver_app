@@ -44,12 +44,15 @@ function AppShell({ installPrompt, handleInstallClick }) {
 
 //version purge
   useEffect(() => {
+    const st_version='1.0.0'
     const version=localStorage.getItem('__v');
-    if(version!=='1.0.0'){
+    if(version!==st_version){
       //purge idb
       purgeIndexedDB('notifications-db');
       localStorage.removeItem('recentBuses');
-      localStorage.setItem('__v','1.0.0');
+      localStorage.setItem('__v',st_version);
+      if(version){
+      window.location.reload();}
     }
   },[]);
 
@@ -63,7 +66,7 @@ function AppShell({ installPrompt, handleInstallClick }) {
         if (event.data?.type === 'LOG_OUT') {
               purgeIndexedDB('notifications-db');
               localStorage.clear();
-              location.reload();
+              window.location.reload();
         }
       };
       navigator.serviceWorker.addEventListener('message', handler);
