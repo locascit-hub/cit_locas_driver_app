@@ -129,7 +129,7 @@ export default function HomeScreen() {
               <p style={styles.statLabel}>Students</p>
             </div>
             <div style={styles.statItem}>
-              <FiMapPin size={24} color="#cfababff" />
+              <FiMapPin size={24} color="#f4f1f1ff" />
               <p style={styles.statNumber}>85</p>
               <p style={styles.statLabel}>Routes</p>
             </div>

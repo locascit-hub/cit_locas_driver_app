@@ -8,7 +8,7 @@ export default function NavBar() {
     <nav className="bottom-nav">
       <NavItem to="/home" icon={<FiHome />} label="Home" />
       <NavItem to="/search" icon={<FiSearch />} label="Search" />
-      <NavItem to="/tracking" icon={<FiMapPin />} label="Schedule" />
+      <NavItem to="/tracking" icon={<FiMapPin />} label="Routes" />
       <NavItem to="/notifications" icon={<FiBell />} label="Notify" />
       <NavItem to="/profile" icon={<FiUser />} label="Profile" />
     </nav>
