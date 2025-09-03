@@ -74,6 +74,7 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     height: "100vh",
+    height: "100dvh",
     backgroundColor: "#f9f9f9",
   },
   header: {
@@ -88,11 +89,13 @@ const styles = {
   pdfContainer: {
     flex: 1,
     width: "100%",
+    height: "calc(100vh - 120px)",
     height: "calc(100dvh - 120px)", // 60px header + 60px bottom nav
     overflow: "hidden",
   },
   pdfFrame: {
     width: "100%",
+    height: "calc(100vh - 120px)",
     height: "calc(100dvh - 120px)",
     border: "none",
   },

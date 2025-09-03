@@ -52,6 +52,7 @@ const styles = {
     alignItems: 'center',
     padding: 20,
     height: '100vh',
+    height: '100dvh',
   },
   title: { 
     fontSize: 28, 

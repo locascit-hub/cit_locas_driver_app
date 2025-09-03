@@ -212,6 +212,7 @@ const saveScheduleLink = async () => {
           display: flex;
           flex-direction: column;
           min-height: 100vh;
+          min-height: 100dvh;
           background-color: var(--background-color);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }

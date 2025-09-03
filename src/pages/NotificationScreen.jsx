@@ -370,6 +370,7 @@ const styles = {
     backgroundColor: '#F9FAFB',
     fontFamily: 'Inter, sans-serif',
     minHeight: '100vh',
+    minHeight: '100dvh',
   },
   header: {
     backgroundColor: '#FFFFFF',

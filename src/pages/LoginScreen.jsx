@@ -250,6 +250,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
+    height: '100dvh',
     background: 'linear-gradient(to bottom, #2563EB, #1E40AF)',
   },
   content: {

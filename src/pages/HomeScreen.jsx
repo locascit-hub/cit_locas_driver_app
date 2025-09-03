@@ -218,7 +218,7 @@ export default function HomeScreen() {
 
 /* styles */
 const styles = {
-  container: { height: "100vh", overflowY: "auto", backgroundColor: "#F9FAFB", paddingBottom: 30 },
+  container: { height: "100vh",height: "100dvh", overflowY: "auto", backgroundColor: "#F9FAFB", paddingBottom: 30 },
   header: {
     paddingTop: 60,
     paddingBottom: 30,

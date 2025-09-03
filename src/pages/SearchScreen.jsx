@@ -253,6 +253,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
+    height: '100dvh',
     backgroundColor: '#F9FAFB',
     overflowY: 'auto',
     paddingBottom: 30,
