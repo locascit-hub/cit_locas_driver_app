@@ -164,18 +164,18 @@ export default function App() {
 
   // Block non-mobile devices
 useEffect(() => {
-  const ua = navigator.userAgent;
+  const ua = navigator.userAgent || "";
+  const isMobileUA = /Android|iPhone|iPad|iPod/i.test(ua);
+  const hasTouch = navigator.maxTouchPoints > 0; // use >0 instead of >1 (some iPhones report exactly 1)
 
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
-  const isAndroid = /Android/.test(ua);
-  const isWindows = /Windows NT/.test(ua);
-  const isMac = /Macintosh/.test(ua);
-
-  // block only Windows or Mac
-  if (isWindows || isMac) {
-    setBlockPage(true);
+  if (isMobileUA && hasTouch) {
+    setBlockPage(false); // allow real mobiles
+  } else {
+    setBlockPage(true);  // block desktops, even with UA spoof
   }
 }, []);
+
+
 
     
 
