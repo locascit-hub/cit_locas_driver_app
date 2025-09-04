@@ -131,6 +131,15 @@ export default function NotificationScreen({ subscribeUserToPush }) {
     }
   };
 
+  const markNotificationAsRead = async (id) => {
+  const db = await dbPromise;
+  const notif = await db.get(STORE_NAME, id);
+  if (notif) {
+    notif.read = true;
+    await db.put(STORE_NAME, notif); // update notification in IDB
+  }
+};
+
 
 
   useEffect(() => {
@@ -339,8 +348,11 @@ export default function NotificationScreen({ subscribeUserToPush }) {
                   setLightboxImages([{ src: uri }]);
                   setLightboxOpen(true);
                 } else {
-                  notification.read = true;
-                  setNotifications([...notifications]);
+                  if (!notification.read) {
+                   notification.read = true;
+                   setNotifications([...notifications]);
+                    markNotificationAsRead(notification._id); // persist read state
+                  }
                 }
               }}
             >

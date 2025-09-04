@@ -157,7 +157,7 @@ const handleViewSchedule = (bus) => {
     onClick={() => handleViewBus(bus)}
   >
     <FiMap size={16} color="#FFFFFF" />
-    <span style={styles.trackButtonText}>Track Live</span>
+    <span style={styles.trackButtonText}>Track Now</span>
   </button>
 ) : (
   <button

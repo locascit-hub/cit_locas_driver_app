@@ -120,7 +120,7 @@ export default function HomeScreen() {
           <div style={styles.statsContainer}>
             <div style={styles.statItem}>
               <FiTruck size={24} color="#FFFFFF" />
-              <p style={styles.statNumber}>100</p>
+              <p style={styles.statNumber}>95</p>
               <p style={styles.statLabel}>Active Buses</p>
             </div>
             <div style={styles.statItem}>
@@ -196,11 +196,11 @@ export default function HomeScreen() {
               <p style={styles.actionText}>Search Bus</p>
             </div>
             <div className="action-card" style={styles.actionCard} onClick={() => navigate("/tracking") }>
-              <FiMapPin size={32} color="#059669" />
-              <p style={styles.actionText}>Live Tracking</p>
+              <FiMapPin size={32} color="#24a972ff" />
+              <p style={styles.actionText}>Schedule</p>
             </div>
             <div className="action-card" style={styles.actionCard} onClick={() => navigate("/profile") }>
-              <FiUser size={32} color="#059669" />
+              <FiUser size={32} color="#24a972ff" />
               <p style={styles.actionText}>Profile</p>
             </div>
             
