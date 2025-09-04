@@ -208,8 +208,8 @@ export default function RouteDetailScreen() {
             }}
           >
             {isStopped
-              ? "Reload Stopped"
-              : `Reload enables in ${remtimer} secs`}
+              ? "Tracking Stopped"
+              : isReady ? "Click reload button" : `Next Location Update in ${remtimer} secs`}
           </div>
         </div>
 
