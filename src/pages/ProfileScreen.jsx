@@ -24,7 +24,7 @@ export default function ProfileScreen({ userData: propUserData , logoutPurge }) 
   const navigate = useNavigate();
   const { token, userData: ctxUserData, role, setRole, setToken, setSno } = useContext(UserContext);
 
-  const [userData, setUserData] = useState(propUserData || ctxUserData || null);
+  const userData = propUserData || ctxUserData;
   const [shareLink, setShareLink] = useState('');
   const [saving, setSaving] = useState(false);
   // new state for schedule link
@@ -39,48 +39,7 @@ export default function ProfileScreen({ userData: propUserData , logoutPurge }) 
   }, [token, navigate]);
 
   // Keep local userData in sync: prefer context, then prop, then fallback decode (minimal)
-  useEffect(() => {
-    if (propUserData) {
-      setUserData(propUserData);
-      if (propUserData.role) setRole && setRole(propUserData.role);
-      return;
-    }
-    if (ctxUserData) {
-      setUserData(ctxUserData);
-      return;
-    }
-    //get token test from globally
-    const stored =localStorage.getItem('test');
-    if (stored) {
-      try {
-        const base64Payload = stored.split('.')[1];
-        if (base64Payload) {
-          const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split('')
-              .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-              .join('')
-          );
-          const payload = JSON.parse(jsonPayload);
-          const email = payload.email || payload.studentId || payload.sub;
-          const roleFromToken = payload.role || 'student';
-          if (email) {
-            const minimal = { email, role: roleFromToken };
-            setUserData(minimal);
-            setRole && setRole(roleFromToken);
-             setToken && setToken(stored);
-            return;
-          }
-        }
-      } catch (err) {
-        // silent: provider should handle decoding normally
-        // console.warn('fallback decode failed', err);
-      }
-    }
-
-    // if we reach here and no token/context, redirect (redirect effect above will also run)
-  }, [propUserData, ctxUserData, setRole]);
+  
 
   // Parse email into name/department/batch
   const parseEmail = (email) => {
@@ -192,7 +151,7 @@ const saveScheduleLink = async () => {
 
   const { name, dept, batch } = parseEmail(userData.email);
   const userInitial = name ? name.charAt(0).toUpperCase() : 'S';
-  const shownRole = userData.role || role || 'student';
+  const shownRole = role || userData?.role || 'student';
 
 
   return (
