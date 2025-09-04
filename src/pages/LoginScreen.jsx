@@ -79,7 +79,7 @@ export default function LoginScreen({purgeIDB,subscribeUserToPush}) {
      
       console.log("Push subscription successful for student:", email.trim());
       localStorage.removeItem('recentBuses');
-      purgeIDB();
+      purgeIDB('notifications-db');
       navigate('/home', { replace: true, state: { role: 'student' } });
     }
   } catch (err) {

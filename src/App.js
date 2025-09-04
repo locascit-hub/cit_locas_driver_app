@@ -29,19 +29,37 @@ const isIOS = () => {
 function AppShell({ installPrompt, handleInstallClick }) {
 
 
-  async function purgeIndexedDB(dbname) {
-  if (!('indexedDB' in window)) {
-    console.warn("This browser doesn't support IndexedDB.");
-    return;
-  }
+async function purgeIndexedDB(dbname) {
+  return new Promise((resolve, reject) => {
+    if (!('indexedDB' in window)) {
+      console.warn("This browser doesn't support IndexedDB.");
+      resolve();
+      return;
+    }
 
-  if (indexedDB.databases) {
-    // Modern browsers (Chrome, Edge, some Firefox)
-    indexedDB.deleteDatabase(dbname);
-  } else {
-    console.warn("indexedDB.databases() not supported in this browser. You must know the DB names to delete them.");
-  }
+    const request = indexedDB.open(dbname);
+
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      const tx = db.transaction(db.objectStoreNames, "readwrite");
+
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+
+      tx.onerror = (e) => reject(e);
+
+      // Clear every object store (like truncating all tables)
+      for (const storeName of db.objectStoreNames) {
+        tx.objectStore(storeName).clear();
+      }
+    };
+
+    request.onerror = (event) => reject(event);
+  });
 }
+
 
 //version purge
   useEffect(() => {

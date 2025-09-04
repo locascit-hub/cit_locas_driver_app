@@ -123,7 +123,7 @@ if (userType === 'incharge@cit@chennai@0409') {
                     ...styles.userTypeButtonText,
                     ...(userType === type && styles.userTypeButtonTextActive)
                   }}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    Incharge
                   </span>
                 </button>
               ))}
