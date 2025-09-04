@@ -94,14 +94,15 @@ export default function NotificationScreen({ subscribeUserToPush }) {
 
 
     useEffect(() => {
-        // Listen for push events forwarded from service worker
+
     const subscribeAlert= async () => {
     if(localStorage.getItem('is_p_s') !== '101'){
       await subscribeUserToPush(userData?.email, token);
     }
   };
+  if(role === 'student'){
     subscribeAlert();
-
+  }
 },
 []);
   // Redirect if no user data
@@ -223,7 +224,8 @@ export default function NotificationScreen({ subscribeUserToPush }) {
       if (data.success) {
         setNewNotification({ title: "", description: "" });
         setSelectedImage(null);
-        fetchNotifications();
+        setNotifications((prev) => [data.notif, ...prev]);
+        await saveNotifications([data.notif]);
       }
       alert('Notification sent successfully');
     } catch (error) {
