@@ -295,7 +295,7 @@ const saveScheduleLink = async () => {
               <span className="detail-value">{shownRole}</span>
             </div>
 
-            {shownRole === 'incharge' && (
+            {shownRole === 'incincharge@cit@chennai@0409harge' && (
               <div style={{ marginTop: 12 }}>
                 <div className="sharelink-box">
                   <input aria-label="Share link" type="text" placeholder="Enter new share link..." value={shareLink} onChange={(e) => setShareLink(e.target.value)} />

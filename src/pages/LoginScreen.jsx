@@ -7,7 +7,7 @@ import getEndpoint from '../utils/loadbalancer';
  
 
 
-export default function LoginScreen({purgeIDB}) {
+export default function LoginScreen({purgeIDB,subscribeUserToPush}) {
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
@@ -20,49 +20,6 @@ export default function LoginScreen({purgeIDB}) {
   const [otp, setOtp] = useState('');
   const navigate = useNavigate();
 
-  const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
-
-  const urlBase64ToUint8Array = (base64String) => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
-    const rawData = window.atob(base64);
-    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-  };
-
-    const subscribeUserToPush = async (userEmail, userToken) => {
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        const subscription = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-        });
-        
-        console.log("Subscription created successfully:", subscription);
-
-        const response = await fetch(`${getEndpoint()}/subscribe`, {
-          method: "POST",
-          body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
-          headers: { "Content-Type": "application/json", ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}), },
-        });
-        
-        if (response.ok) {
-          console.log("Subscription sent to server successfully.");
-        } else {
-          const errorText = await response.text();
-          console.error("Failed to send subscription to server:", response.status, errorText);
-        }
-      } catch (err) {
-        console.error("Failed to subscribe to push notifications:", err);
-      }
-
-    }
-    else {
-      console.error("Service Worker not supported in this browser.");
-    }
-  };
 
   const handleLogin = async () => {
     if (userType === 'student') {

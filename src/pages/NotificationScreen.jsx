@@ -28,10 +28,30 @@ const dbPromise = openDB(DB_NAME, 1, {
 
 const saveNotifications = async (notifs) => {
   const db = await dbPromise;
-  const tx = db.transaction(STORE_NAME, 'readwrite');
+
+  // Save new notifications
+  const tx = db.transaction(STORE_NAME, "readwrite");
   notifs.forEach((notif) => tx.store.put(notif));
   await tx.done;
+
+  // Purge logic: keep only last 30 by `time`
+  const purgeTx = db.transaction(STORE_NAME, "readwrite");
+  const all = await purgeTx.store.getAll();
+
+  if (all.length > 30) {
+    // Sort newest first
+    all.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+    // Delete everything after the latest 30
+    const excess = all.slice(30);
+    for (const old of excess) {
+      await purgeTx.store.delete(old._id);
+    }
+  }
+
+  await purgeTx.done;
 };
+
 
 const getAllNotifications = async () => {
   const db = await dbPromise;
@@ -53,7 +73,7 @@ const getLatestNotificationTime = async () => {
 };
 
 // ---------- NotificationScreen ----------
-export default function NotificationScreen() {
+export default function NotificationScreen({ subscribeUserToPush }) {
   const { role, token } = useContext(UserContext);
   const { userData } = useContext(UserContext);
   const navigate = useNavigate();
@@ -65,11 +85,26 @@ export default function NotificationScreen() {
   const [lightboxImages, setLightboxImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Redirect if no user data
+
+
+  
   useEffect(() => {
     if (!userData) navigate('/');
   }, [userData, navigate]);
 
+
+    useEffect(() => {
+        // Listen for push events forwarded from service worker
+    const subscribeAlert= async () => {
+    if(localStorage.getItem('is_p_s') !== '101'){
+      await subscribeUserToPush(userData?.email, token);
+    }
+  };
+    subscribeAlert();
+
+},
+[]);
+  // Redirect if no user data
   // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {
     try {
@@ -97,10 +132,9 @@ export default function NotificationScreen() {
   };
 
 
+
   useEffect(() => {
     fetchNotifications();
-
-    // Listen for push events forwarded from service worker
     if ('serviceWorker' in navigator) {
       const handler = async (event) => {
         if (event.data?.type === 'NEW_NOTIFICATION') {
@@ -236,7 +270,7 @@ export default function NotificationScreen() {
       </div>
 
       {/* Send Notification */}
-      {role === 'incharge' && (
+      {role === 'incharge@cit@chennai@0409' && (
         <div style={styles.sendSection}>
           <p style={styles.sendTitle}>Send Notification</p>
           <label style={styles.uploadButton}>
@@ -284,7 +318,7 @@ export default function NotificationScreen() {
               borderLeft: `4px solid ${getNotificationBorder(notification.type)}`,
             }}
           >
-            {role === 'incharge' && (
+            {role === 'incharge@cit@chennai@0409' && (
               <button
                 style={styles.deleteButton}
                 onClick={(e) => {

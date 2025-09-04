@@ -9,7 +9,7 @@ import getEndpoint from '../utils/loadbalancer';
 export default function InchargeLoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [userType, setUserType] = useState('incharge');
+  const [userType, setUserType] = useState('incharge@cit@chennai@0409');
   const [loading, setLoading] = useState(false);
   const { setRole,setToken } = useContext(UserContext);
 
@@ -63,7 +63,7 @@ export default function InchargeLoginScreen() {
   };
 
   const handleLogin = async () => {
-if (userType === 'incharge') {
+if (userType === 'incharge@cit@chennai@0409') {
       if (!email || !password) {
         alert('Please enter email and password');
         return;
@@ -82,11 +82,11 @@ if (userType === 'incharge') {
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Login failed');
-        setRole('incharge');
+        setRole('incharge@cit@chennai@0409');
         setToken(data.token);
 
         localStorage.setItem('test',data.token);
-        navigate('/home', { replace: true, state: { role: 'incharge', email } });
+        navigate('/home', { replace: true, state: { role: 'incharge@cit@chennai@0409', email } });
       } catch (err) {
         alert(`Login Error: ${err.message}`);
       }finally {
@@ -110,7 +110,7 @@ if (userType === 'incharge') {
         <div style={styles.form}>
           <div style={styles.userTypeContainer}>
             <div style={styles.userTypeButtons}>
-              {['incharge'].map((type) => (
+              {['incharge@cit@chennai@0409'].map((type) => (
                 <button
                   key={type}
                   style={{
@@ -143,7 +143,7 @@ if (userType === 'incharge') {
             </div>
           )} */}
 
-          {userType === 'incharge' && (
+          {userType === 'incharge@cit@chennai@0409' && (
             <>
               <div style={styles.inputContainer}>
                 <FiMail size={20} color="#64748B" />

@@ -81,7 +81,7 @@ export default function SearchScreen() {
 
   // Navigate as you already do
   navigate('/route-detail', {
-    state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
+    state: { userType: 'student' || 'incharge@cit@chennai@0409', _id: bus.obu_id, clgNo: bus.clgNo },
   });
 };
 

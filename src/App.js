@@ -18,6 +18,7 @@ import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
 import { UserProvider, UserContext } from './contexts'; // import context
 import InchargeLoginScreen from './pages/InchargeLogin';
+import getEndpoint from './utils/loadbalancer';
 
 // Utility: Detect iOS Safari/Chrome (all use WebKit)
 const isIOS = () => {
@@ -76,6 +77,53 @@ function AppShell({ installPrompt, handleInstallClick }) {
   }, []);
 
 
+  
+  const VAPID_PUBLIC_KEY = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+
+  const urlBase64ToUint8Array = (base64String) => {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  };
+
+    const subscribeUserToPush = async (userEmail, userToken) => {
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+        
+        console.log("Subscription created successfully:", subscription);
+
+        const response = await fetch(`${getEndpoint()}/subscribe`, {
+          method: "POST",
+          body: JSON.stringify({subscription:subscription,email: userEmail}), // THIS IS THE CRUCIAL LINE
+          headers: { "Content-Type": "application/json", ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}), },
+        });
+        
+        if (response.ok) {
+          console.log("Subscription sent to server successfully.");
+          localStorage.setItem('is_p_s', '101');
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to send subscription to server:", response.status, errorText);
+        }
+      } catch (err) {
+        console.error("Failed to subscribe to push notifications:", err);
+      }
+
+    }
+    else {
+      console.error("Service Worker not supported in this browser.");
+    }
+  };
+
+
 
   const location = useLocation();
   const hideNavOn = ['/','/incharge-cit-login-xyz', '/login', '/register','/incharge-cit-xyz'];
@@ -90,12 +138,12 @@ function AppShell({ installPrompt, handleInstallClick }) {
         
         <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <WelcomeScreen installPrompt={installPrompt} handleInstallClick={handleInstallClick} />} />
         <Route path="/incharge-cit-login-xyz" element={isLoggedIn ? <Navigate to="/home" /> : <InchargeLoginScreen />} />
-        <Route path="/login" element={<LoginScreen purgeIDB={purgeIndexedDB} />} />
+        <Route path="/login" element={<LoginScreen purgeIDB={purgeIndexedDB} subscribeUserToPush={subscribeUserToPush} />} />
         <Route path="/register" element={<RegisterScreen />} />
         <Route path="/home" element={<HomeScreen />} />
         <Route path="/search" element={<SearchScreen />} />
         <Route path="/tracking" element={<TrackingScreen />} />
-        <Route path="/notifications" element={<NotificationScreen />} />
+        <Route path="/notifications" element={<NotificationScreen subscribeUserToPush={subscribeUserToPush} />} />
         <Route path="/profile" element={<ProfileScreen logoutPurge={purgeIndexedDB} userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
@@ -110,14 +158,23 @@ export default function App() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [role, setRole] = useState(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
+  const [blockpage, setBlockPage] = useState(false);
   
 
 
-
+  // // Block non-mobile devices
+  //  useEffect(() => {
+  //   //if windows or mac setblock
+  //   console.log(navigator.userAgent);
+  //   if(!( /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ){
+  //     setBlockPage(true);
+  //   }
+  //   },[]);
+    
 
   // Notification permission handling
   useEffect(() => {
-    if (!isIOS() && 'Notification' in window) {
+    if (!isIOS()) {
       if (Notification.permission !== 'granted') {
         Notification.requestPermission()
           .then((permission) => {
@@ -132,19 +189,6 @@ export default function App() {
     }
   }, []);
 
-
-
-  useEffect(() => {
-  const handleAppInstalled = () => {
-    alert("App installed successfully! Now you can see the app in your menu.");
-  };
-
-  window.addEventListener("appinstalled", handleAppInstalled);
-
-  return () => {
-    window.removeEventListener("appinstalled", handleAppInstalled);
-  };
-}, []);
 
 
   // Install prompt handler
@@ -168,6 +212,11 @@ export default function App() {
   };
 
   return (
+    blockpage ? 
+    (<div style={{display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',height:'100vh',padding:20,textAlign:'center'}}>
+      <h2>Unsupported Device</h2>
+      <p>please access this application on an iOS or Android mobile device.</p>
+    </div>) :
         <UserProvider>
         <Router>
           <AppShell installPrompt={showInstallButton} handleInstallClick={handleInstallClick}  />
