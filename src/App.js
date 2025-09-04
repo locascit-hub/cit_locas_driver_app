@@ -163,13 +163,20 @@ export default function App() {
 
 
   // Block non-mobile devices
-   useEffect(() => {
-    //if windows or mac setblock
-    console.log(navigator.userAgent);
-    if(!( /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ){
-      setBlockPage(true);
-    }
-    },[]);
+useEffect(() => {
+  const ua = navigator.userAgent;
+
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isAndroid = /Android/.test(ua);
+  const isWindows = /Windows NT/.test(ua);
+  const isMac = /Macintosh/.test(ua);
+
+  // block only Windows or Mac
+  if (isWindows || isMac) {
+    setBlockPage(true);
+  }
+}, []);
+
     
 
   // Notification permission handling
