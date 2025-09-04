@@ -25,28 +25,31 @@ L.Icon.Default.mergeOptions({
 //  Add AnimatedMarker back for testing
 function AnimatedMarker({ position, icon, children }) {
   const markerRef = useRef(null);
-  const prevPos = useRef(position); // Hardcoded previous pos (Bangalore center)
+  const prevPos = useRef(position);
+  const animationRef = useRef(null); // store requestAnimationFrame id
   const [initialPosition] = useState(position);
-  
-
-  
 
   useEffect(() => {
     if (!markerRef.current) return;
 
     const marker = markerRef.current;
-    const from = L.latLng(prevPos.current);
-    const to = L.latLng(position);
+    const from = marker.getLatLng();  // current rendered position (no jump back)
+const to = L.latLng(position);
 
-    if (!from || !to || from.equals(to)){
-      prevPos.current=position;
-       return;
+    if (!from || !to || from.equals(to)) {
+      prevPos.current = position;
+      return;
     }
 
-    let start = null;
-    const duration = 2000; // 2 sec animation
+    // Cancel any running animation before starting a new one
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
 
-    function animate(timestamp) {
+    const duration = 3000; // 3 second smooth move
+    let start = null;
+
+    const animate = (timestamp) => {
       if (!start) start = timestamp;
       const progress = Math.min((timestamp - start) / duration, 1);
 
@@ -55,13 +58,19 @@ function AnimatedMarker({ position, icon, children }) {
       marker.setLatLng([lat, lng]);
 
       if (progress < 1) {
-        requestAnimationFrame(animate);
+        animationRef.current = requestAnimationFrame(animate);
       } else {
-        prevPos.current = to; // update for next run
+        prevPos.current = to; // save latest as baseline
+        animationRef.current = null;
       }
-    }
+    };
 
-    requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame(animate);
+
+    // Cleanup if component unmounts or new animation starts
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
   }, [position]);
 
   return (
@@ -70,6 +79,7 @@ function AnimatedMarker({ position, icon, children }) {
     </Marker>
   );
 }
+
 
 
 export default function RouteDetailScreen() {
@@ -288,7 +298,7 @@ export default function RouteDetailScreen() {
           </LayersControl>
 
 
-          <AnimatedMarker position={[loc.lat,loc.long]} icon={busDivIcon(clgNo || _id)}>
+          <AnimatedMarker position={[loc.lat, loc.long ]} icon={busDivIcon(clgNo || _id)}>
             <Popup>
               <strong>Bus No:</strong> {clgNo || _id}
               <br />
