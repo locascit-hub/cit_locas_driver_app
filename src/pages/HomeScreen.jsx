@@ -154,7 +154,7 @@ export default function HomeScreen() {
                       key={id} 
                       style={{ ...styles.busCardHorizontal, minWidth: 180, position: 'relative' }} 
                       onClick={() => navigate('/route-detail', {
-                        state: { userType: 'student' || 'incharge', _id: bus.obu_id, clgNo: bus.clgNo },
+                        state: { userType: 'student' || 'incharge@cit@chennai@0409', _id: bus.obu_id, clgNo: bus.clgNo },
                       })}
                     >
                       {/* delete button */}
