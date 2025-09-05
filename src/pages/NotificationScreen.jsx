@@ -93,18 +93,34 @@ export default function NotificationScreen({ subscribeUserToPush }) {
   }, [userData, navigate]);
 
 
-    useEffect(() => {
+useEffect(() => {
+  const checkAndSubscribe = async () => {
+    try {
+      // Ensure service worker is registered
+      const reg = await navigator.serviceWorker.ready;
 
-    const subscribeAlert= async () => {
-    if(localStorage.getItem('is_p_s') !== '101'){
-      await subscribeUserToPush(userData?.email, token);
+      // Check existing subscription
+      const subscription = await reg.pushManager.getSubscription();
+
+      if (!subscription) {
+        // Not subscribed yet
+        if (role === "student") {
+          await subscribeUserToPush(userData?.email, token);
+        }
+      } else {
+        console.log("Already subscribed:", subscription);
+        // optionally send subscription info to backend if needed
+      }
+    } catch (err) {
+      console.error("Error checking subscription:", err);
     }
   };
-  if(role === 'student'){
-    subscribeAlert();
+
+  if ("serviceWorker" in navigator && "PushManager" in window) {
+    checkAndSubscribe();
   }
-},
-[]);
+}, []);
+
   // Redirect if no user data
   // ---------- Fetch and Sync Notifications ----------
   const fetchNotifications = async () => {

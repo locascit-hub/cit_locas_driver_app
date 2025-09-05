@@ -126,7 +126,6 @@ async function purgeIndexedDB(dbname) {
         
         if (response.ok) {
           console.log("Subscription sent to server successfully.");
-          localStorage.setItem('is_p_s', '101');
         } else {
           const errorText = await response.text();
           console.error("Failed to send subscription to server:", response.status, errorText);
@@ -197,22 +196,22 @@ useEffect(() => {
 
     
 
-  // Notification permission handling
-  useEffect(() => {
-    if (!isIOS()) {
-      if (Notification.permission !== 'granted') {
-        Notification.requestPermission()
-          .then((permission) => {
-            console.log(`Notification permission: ${permission}`);
-          })
-          .catch((err) => {
-            console.warn('Notification request failed:', err);
-          });
-      }
-    } else {
-      console.log('Notifications not supported on this device/browser.');
-    }
-  }, []);
+  // // Notification permission handling
+  // useEffect(() => {
+  //   if (!isIOS()) {
+  //     if (Notification.permission !== 'granted') {
+  //       Notification.requestPermission()
+  //         .then((permission) => {
+  //           console.log(`Notification permission: ${permission}`);
+  //         })
+  //         .catch((err) => {
+  //           console.warn('Notification request failed:', err);
+  //         });
+  //     }
+  //   } else {
+  //     console.log('Notifications not supported on this device/browser.');
+  //   }
+  // }, []);
 
 
 
