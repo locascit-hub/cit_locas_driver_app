@@ -84,6 +84,7 @@ export default function NotificationScreen({ subscribeUserToPush }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImages, setLightboxImages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [issub,setIssub] = useState(false);
 
 
 
@@ -105,11 +106,14 @@ useEffect(() => {
       if (!subscription) {
         // Not subscribed yet
         if (role === "student") {
+          //console.log("Subscribing to push for student:", userData?.email,token);
           await subscribeUserToPush(userData?.email, token);
+          setIssub(true);
         }
       } else {
-        console.log("Already subscribed:", subscription);
+        //console.log("Already subscribed:", subscription);
         // optionally send subscription info to backend if needed
+        setIssub(true);
       }
     } catch (err) {
       console.error("Error checking subscription:", err);
@@ -293,7 +297,7 @@ useEffect(() => {
             </div>
           )}
         </div>
-        <FiBell size={24} color="#2563EB" />
+        <FiBell size={24} color={issub ? "#2563EB" : "#64748B"} />
       </div>
 
       {/* Send Notification */}
