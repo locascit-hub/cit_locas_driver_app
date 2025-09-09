@@ -12,6 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../contexts';
 import Lightbox from 'yet-another-react-lightbox';
+import Zoom from "yet-another-react-lightbox/plugins/zoom";
 import 'yet-another-react-lightbox/styles.css';
 import getEndpoint from '../utils/loadbalancer';
 import { openDB } from 'idb';
@@ -397,6 +398,11 @@ useEffect(() => {
                     e.stopPropagation();
                     setLightboxImages([{ src: `${getEndpoint()}/api/img?id=${notification.imageUrl}` }]);
                     setLightboxOpen(true);
+                    if (!notification.read) {
+                      notification.read = true;
+                      setNotifications([...notifications]);
+                      markNotificationAsRead(notification._id); // persist read state
+                    }
                   }}
                 />
               )}
@@ -421,12 +427,22 @@ useEffect(() => {
 
       {/* Lightbox */}
       {lightboxOpen && (
-        <Lightbox
-          open={lightboxOpen}
-          close={() => setLightboxOpen(false)}
-          slides={lightboxImages}
-        />
-      )}
+  <Lightbox
+  open={lightboxOpen}
+  close={() => setLightboxOpen(false)}
+  slides={lightboxImages}
+  plugins={[Zoom]}
+  carousel={{ finite: true, preload: 0 }}  // 🔹 disables next/prev navigation
+  zoom={{
+    maxZoomPixelRatio: 3,
+    zoomInMultiplier: 1.2,
+    doubleTapDelay: 300,
+    doubleClickDelay: 300,
+    keyboardMoveDistance: 50,
+  }}
+/>
+
+)}
     </div>
   );
 }
