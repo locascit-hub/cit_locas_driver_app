@@ -18,7 +18,9 @@ import ProfileScreen from './pages/ProfileScreen';
 import RouteDetailScreen from './pages/RouteDetailScreen';
 import { UserProvider, UserContext } from './contexts'; // import context
 import InchargeLoginScreen from './pages/InchargeLogin';
+import AttendanceScreen from './pages/AttendanceScreen';
 import getEndpoint from './utils/loadbalancer';
+
 
 // Utility: Detect iOS Safari/Chrome (all use WebKit)
 const isIOS = () => {
@@ -163,6 +165,7 @@ async function purgeIndexedDB(dbname) {
         <Route path="/notifications" element={<NotificationScreen subscribeUserToPush={subscribeUserToPush} />} />
         <Route path="/profile" element={<ProfileScreen logoutPurge={purgeIndexedDB} userData={userData} />} />
         <Route path="/route-detail" element={<RouteDetailScreen />} />
+        <Route path="/bus-attendance" element={<AttendanceScreen />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       {showNav && <NavBar />}

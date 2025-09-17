@@ -20,6 +20,12 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const ArrowRightIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+);
+
 export default function ProfileScreen({ userData: propUserData , logoutPurge }) {
   const navigate = useNavigate();
   const { token, userData: ctxUserData, role, setRole, setToken, setSno } = useContext(UserContext);
@@ -223,6 +229,20 @@ const saveScheduleLink = async () => {
         .sharelink-box input { flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid #d1d5db; font-size: 0.95rem; }
         .sharelink-box button { padding: 0.6rem 0.9rem; border-radius: 8px; border: none; background: var(--primary-blue); color: #fff; cursor: pointer; }
         .sharelink-box button:disabled { background: #9ca3af; cursor: not-allowed; }
+         .navigation-link { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0.85rem 0.25rem; 
+            margin-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+            cursor: pointer; 
+            transition: background-color 0.2s;
+        }
+        .navigation-link:hover { background-color: #F9FAFB; }
+        .navigation-link-text { font-weight: 600; color: var(--primary-blue); font-size: 0.95rem; }
+        .navigation-link-icon { color: var(--text-secondary); }
+
       `}</style>
 
       <div className="profile-screen">
@@ -254,7 +274,9 @@ const saveScheduleLink = async () => {
               <span className="detail-value">{shownRole}</span>
             </div>
 
-            {shownRole === 'incincharge@cit@chennai@0409harge' && (
+            {shownRole === 'incharge@cit@chennai@0409' && (
+              <>
+               
               <div style={{ marginTop: 12 }}>
                 <div className="sharelink-box">
                   <input aria-label="Share link" type="text" placeholder="Enter new share link..." value={shareLink} onChange={(e) => setShareLink(e.target.value)} />
@@ -268,8 +290,20 @@ const saveScheduleLink = async () => {
                   <button type="button" onClick={saveScheduleLink} disabled={scheduleSaving}>{scheduleSaving ? 'Saving...' : 'Save'}</button>
 
                 </div>
+                {/* NEW: Link to Bus Attendance Page */}
+                <div 
+                  className="navigation-link" 
+                  onClick={() => navigate('/bus-attendance')} 
+                  role="button" 
+                  tabIndex="0"
+                  onKeyDown={(e) => e.key === 'Enter' && navigate('/bus-attendance')}
+                >
+                    <span className="navigation-link-text">View Bus Attendance</span>
+                    <span className="navigation-link-icon"><ArrowRightIcon /></span>
+                </div>
 
               </div>
+              </>
             )}
           </section>
 
