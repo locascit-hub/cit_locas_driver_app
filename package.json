@@ -6,6 +6,8 @@
     "cra-template-pwa": "2.0.0",
     "idb": "^8.0.3",
     "jose": "^6.0.12",
+    "jspdf": "^3.0.3",
+    "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "react": "^19.1.0",

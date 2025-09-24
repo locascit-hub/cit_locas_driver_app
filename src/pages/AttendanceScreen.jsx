@@ -2,11 +2,16 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import getEndpoint from '../utils/loadbalancer';
 import { UserContext } from "../contexts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+
 
 // --- Leaflet Imports ---
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+console.log(jsPDF.prototype.autoTable);
+
 
 // Fix for default Leaflet marker icon issue with bundlers like Webpack
 delete L.Icon.Default.prototype._getIconUrl;
@@ -21,6 +26,7 @@ L.Icon.Default.mergeOptions({
 const ArrowLeftIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg> );
 const MapPinIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#6B7280' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> );
 const RefreshCwIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg> );
+const DownloadIcon = () => ( <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> );
 
 // --- Map Modal Component ---
 // --- Map Modal Component ---
@@ -101,6 +107,7 @@ export default function BusAttendance() {
     const [isMapOpen, setMapOpen] = useState(false);
     const [selectedBus, setSelectedBus] = useState(null);
     const [mapLoading, setMapLoading] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
 
   const fetchBusData = async () => {
@@ -158,6 +165,73 @@ export default function BusAttendance() {
             setMapLoading(false);
         }
     };
+
+ const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Live Bus Status Report", 14, 22);
+
+    doc.setFontSize(10);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 28);
+    doc.text(`Time: ${new Date().toLocaleTimeString()}`, 14, 34);
+
+    const tableData = [];
+    for (let i = 0; i < buses.length; i++) {
+        const bus = buses[i];
+        let route = "N/A";
+        let last = "N/A";
+
+        try {
+            const response = await fetch(`${getEndpoint()}/api/bus-pdf/${bus.clgNo}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (response.ok) {
+                const data = await response.json();
+                route = data.route || "N/A";
+
+                if (bus.i === -1 && data.last) {
+                    last = new Date(data.last).toLocaleTimeString();
+                } else if (bus.i !== -1) {
+                    last = "Not Reached Yet";
+                }
+            }
+        } catch (err) {
+            console.error(`Failed to fetch details for bus ${bus.clgNo}:`, err);
+        }
+        
+        tableData.push([
+            i + 1, 
+            bus.clgNo, 
+            route, 
+            last
+        ]);
+    }
+
+    // ✅ autoTable now works because the plugin is imported
+   
+
+// Call autoTable function, passing `doc`
+autoTable(doc, {
+  head: [['Serial Number', 'Bus Number', 'Route Name', 'Reached Time']],
+  body:tableData,
+  startY: 40,
+  theme: 'striped',
+  headStyles: { fillColor: '#4B5563' },
+  styles: { fontSize: 10, cellPadding: 3, halign: 'center' },
+  columnStyles: {
+    0: { halign: 'center' },
+    1: { halign: 'center' },
+    2: { halign: 'left' },
+    3: { halign: 'center' }
+  }
+});
+
+doc.save("bus_status_report.pdf");
+    setIsDownloading(false);
+};
+
     
     return (
         <>
@@ -205,7 +279,18 @@ export default function BusAttendance() {
                 <header className="dashboard-header">
                     <button className="header-btn" onClick={() => navigate(-1)} aria-label="Go Back"><ArrowLeftIcon /></button>
                     <h1 className="header-title">Live Bus Status</h1>
-                    <button className="header-btn" onClick={fetchBusData} aria-label="Refresh Data"><RefreshCwIcon /></button>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                          <button 
+                    className="header-btn" 
+                   onClick={handleDownloadPDF} 
+                   aria-label="Download PDF Report"
+                   disabled={isDownloading || loading}
+                   >
+                    {isDownloading ? <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '3px' }}></div> : <DownloadIcon />}
+                </button>
+                <button className="header-btn" onClick={fetchBusData} aria-label="Refresh Data" disabled={isDownloading}><RefreshCwIcon /></button>
+               </div>
                 </header>
                 <main className="dashboard-content">
                     {loading ? (
